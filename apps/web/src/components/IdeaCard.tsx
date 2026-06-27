@@ -35,16 +35,16 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, isNew,
 
   return (
     <article ref={ref} className={`idea-card ${isNew ? "is-new" : ""} ${menuOpen ? "menu-open" : ""}`}>
-      <div className="heart-column">
+      <div className="vote-column">
         <button
-          className={`heart-button ${pulsing ? "pulse" : ""}`}
+          className={`vote-button ${pulsing ? "pulse" : ""}`}
           type="button"
           onClick={heart}
           aria-pressed={idea.heartedByMe}
           aria-label={idea.heartedByMe ? "Remove heart" : "Heart idea"}
         >
           <Heart />
-          <span className="heart-count">{idea.heartCount}</span>
+          <span className="vote-count">{idea.heartCount}</span>
         </button>
       </div>
       <div className="idea-content">

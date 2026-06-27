@@ -134,7 +134,7 @@ button {
 .link-box:focus-within,
 .composer:focus-within,
 .idea-menu-button:focus-visible,
-.heart-button:focus-visible {
+.vote-button:focus-visible {
   outline: 2px solid rgba(21, 21, 21, 0.34);
   outline-offset: 2px;
 }
@@ -280,13 +280,13 @@ button {
   }
 }
 
-.heart-column {
+.vote-column {
   display: grid;
   place-items: center;
   border-right: 1px solid var(--line);
 }
 
-.heart-button {
+.vote-button {
   display: grid;
   gap: 0;
   place-items: center;
@@ -299,16 +299,16 @@ button {
   line-height: 1;
 }
 
-.heart-button:hover,
-.heart-button[aria-pressed="true"] {
+.vote-button:hover,
+.vote-button[aria-pressed="true"] {
   color: var(--heart);
 }
 
-.heart-button[aria-pressed="true"] svg {
+.vote-button[aria-pressed="true"] svg {
   fill: currentColor;
 }
 
-.heart-button.pulse svg {
+.vote-button.pulse svg {
   animation: heartPulse 260ms ease;
 }
 
@@ -318,7 +318,7 @@ button {
   }
 }
 
-.heart-count {
+.vote-count {
   display: block;
   margin-top: -3px;
   font-size: 13px;
