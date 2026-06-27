@@ -32,7 +32,21 @@ export default function IdeaList(props: Props) {
       const previous = previousRects.current.get(idea.renderKey);
       nextRects.set(idea.renderKey, next);
 
-      if (!previous) continue;
+      if (!previous) {
+        // Run entering animation in JS if list was already measured (meaning this is a new card)
+        // This measures the card at its true layout position BEFORE animating, avoiding skew.
+        if (hasMeasured.current) {
+          element.animate(
+            [
+              { opacity: 0, transform: "translateY(4px)" },
+              { opacity: 1, transform: "translateY(0)" }
+            ],
+            { duration: 160, easing: "ease" }
+          );
+        }
+        continue;
+      }
+
       const deltaY = previous.top - next.top;
       if (Math.abs(deltaY) < 1) continue;
 
@@ -66,7 +80,6 @@ export default function IdeaList(props: Props) {
       {props.ideas.map((idea) => (
         <IdeaCard
           key={idea.renderKey}
-          isNew={hasMeasured.current && !previousRenderKeys.current.has(idea.renderKey)}
           ref={(element) => {
             if (element) {
               itemRefs.current.set(idea.renderKey, element);

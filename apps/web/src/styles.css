@@ -261,10 +261,6 @@ button {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
 }
 
-.idea-card.is-new {
-  animation: ideaIn 160ms ease both;
-}
-
 .idea-card.menu-open {
   z-index: 40;
 }

@@ -5,13 +5,12 @@ import TextEditModal from "./TextEditModal";
 
 type Props = {
   idea: Idea;
-  isNew: boolean;
   onToggleHeart: (idea: Idea) => Promise<void>;
   onUpdate: (ideaId: string, text: string) => Promise<void>;
   onDelete: (ideaId: string) => Promise<void>;
 };
 
-const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, isNew, onToggleHeart, onUpdate, onDelete }, ref) {
+const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, onToggleHeart, onUpdate, onDelete }, ref) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [pulsing, setPulsing] = useState(false);
@@ -34,7 +33,7 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, isNew,
   }
 
   return (
-    <article ref={ref} className={`idea-card ${isNew ? "is-new" : ""} ${menuOpen ? "menu-open" : ""}`}>
+    <article ref={ref} className={`idea-card ${menuOpen ? "menu-open" : ""}`}>
       <div className="vote-column">
         <button
           className={`vote-button ${pulsing ? "pulse" : ""}`}

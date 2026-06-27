@@ -14,8 +14,12 @@ function withRenderKey(idea: Idea, renderKey = idea.id): ClientIdea {
   return { ...idea, renderKey };
 }
 
-function makeOptimisticIdea(roomId: string, text: string, clientMutationId: string): ClientIdea {
-  const now = new Date().toISOString();
+function makeOptimisticIdea(
+  roomId: string,
+  text: string,
+  clientMutationId: string,
+  createdAt = new Date().toISOString()
+): ClientIdea {
   return {
     id: `optimistic_${crypto.randomUUID()}`,
     renderKey: `local_${clientMutationId}`,
@@ -24,8 +28,8 @@ function makeOptimisticIdea(roomId: string, text: string, clientMutationId: stri
     text,
     heartCount: 1,
     heartedByMe: true,
-    createdAt: now,
-    updatedAt: now
+    createdAt,
+    updatedAt: createdAt
   };
 }
 
@@ -134,19 +138,25 @@ export function useRoom(roomSlug: string, participantId: string) {
   );
 
   const replaceIdea = useCallback((nextIdea: Idea, clientMutationId?: string) => {
+    if (clientMutationId && appliedMutationIdsRef.current.has(clientMutationId)) return;
     if (clientMutationId) appliedMutationIdsRef.current.add(clientMutationId);
     setIdeas((current) => {
       const previousIdea = current.find((idea) => idea.id === nextIdea.id || (clientMutationId && idea.clientMutationId === clientMutationId));
       const nextClientIdea = withRenderKey(nextIdea, previousIdea?.renderKey);
+      if (clientMutationId) {
+        nextClientIdea.clientMutationId = clientMutationId;
+      }
       return sortIdeas([nextClientIdea, ...current.filter((idea) => idea.renderKey !== nextClientIdea.renderKey && idea.id !== nextIdea.id)]);
     });
   }, []);
 
   const replaceOptimisticIdea = useCallback((optimisticId: string, nextIdea: Idea, clientMutationId: string) => {
+    if (appliedMutationIdsRef.current.has(clientMutationId)) return;
     appliedMutationIdsRef.current.add(clientMutationId);
     setIdeas((current) => {
       const optimisticIdea = current.find((idea) => idea.id === optimisticId || idea.id === nextIdea.id || idea.clientMutationId === clientMutationId);
       const nextClientIdea = withRenderKey(nextIdea, optimisticIdea?.renderKey);
+      nextClientIdea.clientMutationId = clientMutationId;
       return sortIdeas([nextClientIdea, ...current.filter((idea) => idea.renderKey !== nextClientIdea.renderKey && idea.id !== nextIdea.id)]);
     });
   }, []);
@@ -170,7 +180,15 @@ export function useRoom(roomSlug: string, participantId: string) {
       },
       createIdea: async (text: string) => {
         const clientMutationId = createClientMutationId();
-        const optimisticIdea = room ? makeOptimisticIdea(room.id, text, clientMutationId) : null;
+        let optimisticCreatedAt = new Date().toISOString();
+        if (ideas.length > 0) {
+          const maxCreatedAt = ideas.reduce((max, idea) => (idea.createdAt > max ? idea.createdAt : max), "");
+          if (maxCreatedAt && maxCreatedAt > optimisticCreatedAt) {
+            const nextTime = new Date(maxCreatedAt).getTime() + 1;
+            optimisticCreatedAt = new Date(nextTime).toISOString();
+          }
+        }
+        const optimisticIdea = room ? makeOptimisticIdea(room.id, text, clientMutationId, optimisticCreatedAt) : null;
         if (optimisticIdea) {
           setIdeas((current) => sortIdeas([optimisticIdea, ...current]));
         }

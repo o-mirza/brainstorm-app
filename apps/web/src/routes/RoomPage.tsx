@@ -17,7 +17,7 @@ export default function RoomPage() {
   const navigate = useNavigate();
   const roomSlug = params.roomSlug ?? "";
   const participantId = useParticipantId();
-  const recent = useRecentRooms();
+  const { rooms, rememberRoom, updateRoomTitle } = useRecentRooms();
   const roomState = useRoom(roomSlug, participantId);
   const [shareOverlayOpen, setShareOverlayOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
@@ -31,21 +31,21 @@ export default function RoomPage() {
 
   useEffect(() => {
     if (roomState.room) {
-      recent.rememberRoom(roomState.room, roomState.ideas.length);
+      rememberRoom(roomState.room, roomState.ideas.length);
     }
-  }, [recent, roomState.ideas.length, roomState.room]);
+  }, [rememberRoom, roomState.ideas.length, roomState.room]);
 
   const roomUrl = useMemo(() => getRoomUrl(roomSlug), [roomSlug]);
 
   async function createNewRoom() {
     const room = await createRoom();
-    recent.rememberRoom(room, 0);
+    rememberRoom(room, 0);
     navigate(`/r/${room.slug}`, { state: { createdRoom: true } });
   }
 
   async function rename(title: string) {
     const room = await roomState.actions.renameRoom(title);
-    recent.updateRoomTitle(room);
+    updateRoomTitle(room);
   }
 
   async function updateIdea(ideaId: string, text: string) {
@@ -97,7 +97,7 @@ export default function RoomPage() {
         roomUrl={roomUrl}
         participantCount={roomState.participantCount}
         status={connectionStatus}
-        recentRooms={recent.rooms}
+        recentRooms={rooms}
         animateGeneratedTitle={createdRoom}
         onRename={rename}
         onCreateRoom={() => void createNewRoom()}
@@ -111,7 +111,7 @@ export default function RoomPage() {
         onDeleteIdea={deleteIdea}
       />
       {shareOverlayOpen ? <ShareOverlay roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
-      {recentOpen ? <RecentRoomsDialog rooms={recent.rooms} onClose={() => setRecentOpen(false)} /> : null}
+      {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
     </>
   );
 }
