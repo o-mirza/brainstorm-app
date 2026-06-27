@@ -542,6 +542,16 @@ button {
   border-radius: 7px;
   background: #fff;
   opacity: 0.72;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.qr-button:hover .qr-real {
+  opacity: 1;
+  transform: scale(1.01);
+}
+
+.qr-button:active .qr-real {
+  transform: scale(0.99);
 }
 
 .link-box,
@@ -708,6 +718,17 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+  cursor: zoom-out;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.share-overlay .large-qr:hover {
+  opacity: 0.95;
+  transform: scale(1.01);
+}
+
+.share-overlay .large-qr:active {
+  transform: scale(0.99);
 }
 
 .large-link-box {
