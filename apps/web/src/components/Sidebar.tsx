@@ -11,7 +11,7 @@ type Props = {
   onExpand: () => void;
 };
 
-export default function ShareSidebar({ roomUrl, recentRooms, onCreateRoom, onShowRecent, onExpand }: Props) {
+export default function Sidebar({ roomUrl, recentRooms, onCreateRoom, onShowRecent, onExpand }: Props) {
   return (
     <aside className="side">
       <div className="side-head">
@@ -22,9 +22,9 @@ export default function ShareSidebar({ roomUrl, recentRooms, onCreateRoom, onSho
       </div>
       <div className="side-body">
         <div className="quiet-panel">
-          <div className="qr-wrap">
+          <button className="qr-wrap qr-button" type="button" onClick={onExpand} aria-label="Expand sharing view">
             <QRCodeSVG value={roomUrl} size={242} bgColor="#ffffff" fgColor="#5d626b" className="qr-real" />
-          </div>
+          </button>
           <div className="link-box">
             <span className="link-text">{roomUrl}</span>
             <CopyLinkButton value={roomUrl} />

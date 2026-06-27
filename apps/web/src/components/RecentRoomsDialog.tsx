@@ -14,21 +14,23 @@ export default function RecentRoomsDialog({ rooms, onClose }: { rooms: RecentRoo
             <X size={18} />
           </button>
         </div>
-        <div className="recent-list">
-          {rooms.length === 0 ? <p>No recent rooms yet.</p> : null}
-          {rooms.map((room) => (
-            <button
-              key={room.roomSlug}
-              type="button"
-              onClick={() => {
-                onClose();
-                navigate(`/r/${room.roomSlug}`);
-              }}
-            >
-              <strong>{room.title}</strong>
-              <span>{room.ideaCount ?? 0} ideas · {new Date(room.lastVisitedAt).toLocaleString()}</span>
-            </button>
-          ))}
+        <div className="recent-list-wrap">
+          <div className="recent-list">
+            {rooms.length === 0 ? <p>No recent rooms yet.</p> : null}
+            {rooms.map((room) => (
+              <button
+                key={room.roomSlug}
+                type="button"
+                onClick={() => {
+                  onClose();
+                  navigate(`/r/${room.roomSlug}`);
+                }}
+              >
+                <strong>{room.title}</strong>
+                <span>{room.ideaCount ?? 0} ideas · {new Date(room.lastVisitedAt).toLocaleString()}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

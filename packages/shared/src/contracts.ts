@@ -12,35 +12,43 @@ export type RenameRoomRequest = {
 
 export type RenameRoomResponse = {
   room: Room;
+  clientMutationId?: string;
 };
 
 export type CreateIdeaRequest = {
   text: string;
+  clientMutationId?: string;
 };
 
 export type CreateIdeaResponse = {
   idea: Idea;
+  clientMutationId?: string;
 };
 
 export type UpdateIdeaRequest = {
   text: string;
+  clientMutationId?: string;
 };
 
 export type UpdateIdeaResponse = {
   idea: Idea;
+  clientMutationId?: string;
 };
 
 export type DeleteIdeaResponse = {
   ok: true;
   ideaId: string;
+  clientMutationId?: string;
 };
 
 export type HeartIdeaResponse = {
   idea: Idea;
+  clientMutationId?: string;
 };
 
 export type UnheartIdeaResponse = {
   idea: Idea;
+  clientMutationId?: string;
 };
 
 export type ClientWsEvent =
@@ -65,18 +73,22 @@ export type ServerWsEvent =
   | {
       type: "room.updated";
       room: Room;
+      clientMutationId?: string;
     }
   | {
       type: "idea.created";
       idea: SharedIdea;
+      clientMutationId?: string;
     }
   | {
       type: "idea.updated";
       idea: SharedIdeaUpdate;
+      clientMutationId?: string;
     }
   | {
       type: "idea.deleted";
       idea: IdeaDeleted;
+      clientMutationId?: string;
     }
   | {
       type: "participant.count";

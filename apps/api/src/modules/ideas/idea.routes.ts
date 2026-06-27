@@ -23,6 +23,14 @@ function asBadRequest(error: unknown): Error {
   return error as Error;
 }
 
+function parseClientMutationId(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 && value.length <= 120 ? value : undefined;
+}
+
+function withClientMutationId<T extends object>(value: T, clientMutationId: string | undefined): T & { clientMutationId?: string } {
+  return clientMutationId ? { ...value, clientMutationId } : value;
+}
+
 export async function registerIdeaRoutes(app: FastifyInstance, realtime: RealtimeGateway) {
   app.post<{ Params: { roomSlug: string }; Body: CreateIdeaRequest }>(
     "/api/rooms/:roomSlug/ideas",
@@ -30,10 +38,10 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
       try {
         const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
         const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
-        const { text } = ideaTextRequestSchema.parse(request.body);
+        const { text, clientMutationId } = ideaTextRequestSchema.parse(request.body);
         const idea = await createIdea(roomSlug, participantId, text);
-        realtime.broadcastRoom(roomSlug, { type: "idea.created", idea: toSharedIdea(idea) });
-        return { idea };
+        realtime.broadcastRoom(roomSlug, withClientMutationId({ type: "idea.created", idea: toSharedIdea(idea) }, clientMutationId));
+        return withClientMutationId({ idea }, clientMutationId);
       } catch (error) {
         throw asBadRequest(error);
       }
@@ -46,19 +54,25 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
       try {
         const ideaId = ideaIdSchema.parse(request.params.ideaId);
         const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
-        const { text } = ideaTextRequestSchema.parse(request.body);
+        const { text, clientMutationId } = ideaTextRequestSchema.parse(request.body);
         const { idea, roomSlug } = await updateIdea(ideaId, participantId, text);
-        realtime.broadcastRoom(roomSlug, {
-          type: "idea.updated",
-          idea: {
-            id: idea.id,
-            roomId: idea.roomId,
-            text: idea.text,
-            heartCount: idea.heartCount,
-            updatedAt: idea.updatedAt
-          }
-        });
-        return { idea };
+        realtime.broadcastRoom(
+          roomSlug,
+          withClientMutationId(
+            {
+              type: "idea.updated",
+              idea: {
+                id: idea.id,
+                roomId: idea.roomId,
+                text: idea.text,
+                heartCount: idea.heartCount,
+                updatedAt: idea.updatedAt
+              }
+            },
+            clientMutationId
+          )
+        );
+        return withClientMutationId({ idea }, clientMutationId);
       } catch (error) {
         throw asBadRequest(error);
       }
@@ -69,12 +83,13 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
     try {
       const ideaId = ideaIdSchema.parse(request.params.ideaId);
       parseParticipantHeader(request.headers["x-participant-id"]);
+      const clientMutationId = parseClientMutationId(request.headers["x-client-mutation-id"]);
       const deleted = await deleteIdea(ideaId);
-      realtime.broadcastRoom(deleted.roomSlug, {
-        type: "idea.deleted",
-        idea: { id: deleted.ideaId, roomId: deleted.roomId }
-      });
-      return { ok: true, ideaId: deleted.ideaId };
+      realtime.broadcastRoom(
+        deleted.roomSlug,
+        withClientMutationId({ type: "idea.deleted", idea: { id: deleted.ideaId, roomId: deleted.roomId } }, clientMutationId)
+      );
+      return withClientMutationId({ ok: true, ideaId: deleted.ideaId }, clientMutationId);
     } catch (error) {
       throw asBadRequest(error);
     }
@@ -84,12 +99,16 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
     try {
       const ideaId = ideaIdSchema.parse(request.params.ideaId);
       const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+      const clientMutationId = parseClientMutationId(request.headers["x-client-mutation-id"]);
       const { idea, roomSlug } = await heartIdea(ideaId, participantId);
-      realtime.broadcastRoom(roomSlug, {
-        type: "idea.updated",
-        idea: { id: idea.id, roomId: idea.roomId, heartCount: idea.heartCount, updatedAt: idea.updatedAt }
-      });
-      return { idea };
+      realtime.broadcastRoom(
+        roomSlug,
+        withClientMutationId(
+          { type: "idea.updated", idea: { id: idea.id, roomId: idea.roomId, heartCount: idea.heartCount, updatedAt: idea.updatedAt } },
+          clientMutationId
+        )
+      );
+      return withClientMutationId({ idea }, clientMutationId);
     } catch (error) {
       throw asBadRequest(error);
     }
@@ -101,12 +120,16 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
       try {
         const ideaId = ideaIdSchema.parse(request.params.ideaId);
         const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+        const clientMutationId = parseClientMutationId(request.headers["x-client-mutation-id"]);
         const { idea, roomSlug } = await unheartIdea(ideaId, participantId);
-        realtime.broadcastRoom(roomSlug, {
-          type: "idea.updated",
-          idea: { id: idea.id, roomId: idea.roomId, heartCount: idea.heartCount, updatedAt: idea.updatedAt }
-        });
-        return { idea };
+        realtime.broadcastRoom(
+          roomSlug,
+          withClientMutationId(
+            { type: "idea.updated", idea: { id: idea.id, roomId: idea.roomId, heartCount: idea.heartCount, updatedAt: idea.updatedAt } },
+            clientMutationId
+          )
+        );
+        return withClientMutationId({ idea }, clientMutationId);
       } catch (error) {
         throw asBadRequest(error);
       }

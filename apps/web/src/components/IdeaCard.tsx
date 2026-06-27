@@ -1,19 +1,20 @@
 import type { Idea } from "@brainstorm/shared";
 import { Clipboard, Heart, MoreVertical, Pencil, Trash2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import TextEditModal from "./TextEditModal";
 
 type Props = {
   idea: Idea;
+  isNew: boolean;
   onToggleHeart: (idea: Idea) => Promise<void>;
   onUpdate: (ideaId: string, text: string) => Promise<void>;
   onDelete: (ideaId: string) => Promise<void>;
 };
 
-export default function IdeaCard({ idea, onToggleHeart, onUpdate, onDelete }: Props) {
+const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, isNew, onToggleHeart, onUpdate, onDelete }, ref) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [pending, setPending] = useState(false);
+  const [pulsing, setPulsing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -24,21 +25,19 @@ export default function IdeaCard({ idea, onToggleHeart, onUpdate, onDelete }: Pr
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
-  async function heart() {
-    if (pending) return;
-    setPending(true);
-    try {
-      await onToggleHeart(idea);
-    } finally {
-      setPending(false);
-    }
+  function heart() {
+    setPulsing(true);
+    window.setTimeout(() => setPulsing(false), 320);
+    void onToggleHeart(idea).catch(() => {
+      // The optimistic room state rolls back on failure.
+    });
   }
 
   return (
-    <article className="idea-card">
+    <article ref={ref} className={`idea-card ${isNew ? "is-new" : ""} ${menuOpen ? "menu-open" : ""}`}>
       <div className="heart-column">
         <button
-          className="heart-button"
+          className={`heart-button ${pulsing ? "pulse" : ""}`}
           type="button"
           onClick={heart}
           aria-pressed={idea.heartedByMe}
@@ -77,4 +76,6 @@ export default function IdeaCard({ idea, onToggleHeart, onUpdate, onDelete }: Pr
       ) : null}
     </article>
   );
-}
+});
+
+export default IdeaCard;

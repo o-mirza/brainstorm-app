@@ -13,7 +13,11 @@ export async function buildServer() {
   const app = Fastify({ logger: env.NODE_ENV !== "test" });
   const realtime = new RealtimeGateway(db);
 
-  await app.register(cors, { origin: env.CLIENT_ORIGIN });
+  await app.register(cors, {
+    origin: env.CLIENT_ORIGIN,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["content-type", "x-participant-id", "x-client-mutation-id"]
+  });
   await app.register(sensible);
   await app.register(websocket);
 

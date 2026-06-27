@@ -16,7 +16,7 @@ export default function HomeRedirect() {
       try {
         const room = await createRoom();
         rememberRoom(room, 0);
-        navigate(`/r/${room.slug}`, { replace: true });
+        navigate(`/r/${room.slug}`, { replace: true, state: { createdRoom: true } });
       } catch (createError) {
         setError(createError instanceof Error ? createError.message : "Could not create room.");
       }

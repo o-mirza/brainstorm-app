@@ -1,19 +1,22 @@
 import type { Idea, RecentRoom, Room } from "@brainstorm/shared";
+import { useEffect, useState } from "react";
+import { useMediaQuery } from "../hooks/useMediaQuery";
+import type { ClientIdea } from "../hooks/useRoom";
 import type { ConnectionStatus as Status } from "../lib/types";
 import IdeaComposer from "./IdeaComposer";
 import IdeaList from "./IdeaList";
-import ShareSidebar from "./ShareSidebar";
+import Sidebar from "./Sidebar";
 import TopBar from "./TopBar";
 
 type Props = {
   room: Room;
-  ideas: Idea[];
+  ideas: ClientIdea[];
   roomUrl: string;
   participantCount: number;
   status: Status;
   recentRooms: RecentRoom[];
+  animateGeneratedTitle: boolean;
   onRename: (title: string) => Promise<void>;
-  onOpenShare: () => void;
   onCreateRoom: () => void;
   onShowRecent: () => void;
   onExpandShare: () => void;
@@ -24,14 +27,39 @@ type Props = {
 };
 
 export default function AppShell(props: Props) {
+  const isMobile = useMediaQuery("(max-width: 860px)");
+  const [shareOpen, setShareOpen] = useState(!isMobile);
+
+  useEffect(() => {
+    setShareOpen(!isMobile);
+  }, [isMobile]);
+
+  function toggleSidebar() {
+    setShareOpen((open) => !open);
+  }
+
+  function renderSidebar() {
+    return (
+      <Sidebar
+        roomUrl={props.roomUrl}
+        recentRooms={props.recentRooms}
+        onCreateRoom={props.onCreateRoom}
+        onShowRecent={props.onShowRecent}
+        onExpand={props.onExpandShare}
+      />
+    );
+  }
+
   return (
-    <div className="app">
+    <div className={`app ${shareOpen ? "share-open" : "share-closed"}`}>
       <TopBar
         room={props.room}
         participantCount={props.participantCount}
         status={props.status}
+        animateGeneratedTitle={props.animateGeneratedTitle}
         onRename={props.onRename}
-        onOpenShare={props.onOpenShare}
+        sidebarOpen={shareOpen}
+        onToggleSidebar={toggleSidebar}
       />
       <div className="app-content">
         <main className="board">
@@ -47,13 +75,7 @@ export default function AppShell(props: Props) {
             <IdeaComposer onSubmit={props.onCreateIdea} />
           </div>
         </main>
-        <ShareSidebar
-          roomUrl={props.roomUrl}
-          recentRooms={props.recentRooms}
-          onCreateRoom={props.onCreateRoom}
-          onShowRecent={props.onShowRecent}
-          onExpand={props.onExpandShare}
-        />
+        {renderSidebar()}
       </div>
     </div>
   );

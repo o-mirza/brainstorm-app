@@ -4,18 +4,17 @@ import { IDEA_TEXT_MAX_LENGTH } from "@brainstorm/shared";
 
 export default function IdeaComposer({ onSubmit }: { onSubmit: (text: string) => Promise<void> }) {
   const [value, setValue] = useState("");
-  const [pending, setPending] = useState(false);
   const trimmed = value.trim();
   const nearLimit = value.length > IDEA_TEXT_MAX_LENGTH - 30;
 
   async function doSubmit() {
-    if (!trimmed || pending || value.length > IDEA_TEXT_MAX_LENGTH) return;
-    setPending(true);
+    if (!trimmed || value.length > IDEA_TEXT_MAX_LENGTH) return;
+    const submittedText = trimmed;
+    setValue("");
     try {
-      await onSubmit(trimmed);
-      setValue("");
-    } finally {
-      setPending(false);
+      await onSubmit(submittedText);
+    } catch {
+      setValue((current) => (current ? current : submittedText));
     }
   }
 
@@ -42,7 +41,7 @@ export default function IdeaComposer({ onSubmit }: { onSubmit: (text: string) =>
           aria-label="Add an idea"
         />
         {nearLimit ? <span className="char-count">{IDEA_TEXT_MAX_LENGTH - value.length}</span> : null}
-        <button type="submit" disabled={!trimmed || pending} aria-label="Submit idea">
+        <button type="submit" disabled={!trimmed} aria-label="Submit idea">
           <SendHorizonal size={19} />
         </button>
       </form>

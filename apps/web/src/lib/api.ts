@@ -58,43 +58,52 @@ export async function renameRoom(roomSlug: string, title: string): Promise<Room>
   return data.room;
 }
 
-export async function createIdea(roomSlug: string, participantId: string, text: string): Promise<Idea> {
+export async function createIdea(roomSlug: string, participantId: string, text: string, clientMutationId?: string): Promise<Idea> {
   const data = await request<CreateIdeaResponse>(`/api/rooms/${roomSlug}/ideas`, {
     method: "POST",
     headers: { "x-participant-id": participantId },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text, clientMutationId })
   });
   return data.idea;
 }
 
-export async function updateIdea(ideaId: string, participantId: string, text: string): Promise<Idea> {
+export async function updateIdea(ideaId: string, participantId: string, text: string, clientMutationId?: string): Promise<Idea> {
   const data = await request<UpdateIdeaResponse>(`/api/ideas/${ideaId}`, {
     method: "PATCH",
     headers: { "x-participant-id": participantId },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text, clientMutationId })
   });
   return data.idea;
 }
 
-export async function deleteIdea(ideaId: string, participantId: string): Promise<void> {
+export async function deleteIdea(ideaId: string, participantId: string, clientMutationId?: string): Promise<void> {
   await request(`/api/ideas/${ideaId}`, {
     method: "DELETE",
-    headers: { "x-participant-id": participantId }
+    headers: {
+      "x-participant-id": participantId,
+      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {})
+    }
   });
 }
 
-export async function heartIdea(ideaId: string, participantId: string): Promise<Idea> {
+export async function heartIdea(ideaId: string, participantId: string, clientMutationId?: string): Promise<Idea> {
   const data = await request<HeartIdeaResponse>(`/api/ideas/${ideaId}/heart`, {
     method: "PUT",
-    headers: { "x-participant-id": participantId }
+    headers: {
+      "x-participant-id": participantId,
+      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {})
+    }
   });
   return data.idea;
 }
 
-export async function unheartIdea(ideaId: string, participantId: string): Promise<Idea> {
+export async function unheartIdea(ideaId: string, participantId: string, clientMutationId?: string): Promise<Idea> {
   const data = await request<UnheartIdeaResponse>(`/api/ideas/${ideaId}/heart`, {
     method: "DELETE",
-    headers: { "x-participant-id": participantId }
+    headers: {
+      "x-participant-id": participantId,
+      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {})
+    }
   });
   return data.idea;
 }

@@ -19,7 +19,7 @@ export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; on
           <X size={22} />
         </button>
         <h1>Jump in</h1>
-        <QRCodeSVG value={roomUrl} size={340} bgColor="#ffffff" fgColor="#4f535b" />
+        <QRCodeSVG value={roomUrl} size={340} bgColor="#ffffff" fgColor="#4f535b" className="large-qr" />
         <div className="large-link-box">
           <span>{roomUrl}</span>
           <CopyLinkButton value={roomUrl} />

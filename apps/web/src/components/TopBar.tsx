@@ -8,17 +8,25 @@ type Props = {
   room: Room;
   participantCount: number;
   status: Status;
+  animateGeneratedTitle: boolean;
   onRename: (title: string) => Promise<void>;
-  onOpenShare: () => void;
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
 };
 
-export default function TopBar({ room, participantCount, status, onRename, onOpenShare }: Props) {
+export default function TopBar({ room, participantCount, status, animateGeneratedTitle, onRename, sidebarOpen, onToggleSidebar }: Props) {
   return (
     <header className="topbar">
-      <RoomTitleEditor room={room} onRename={onRename} />
+      <RoomTitleEditor room={room} animateGeneratedTitle={animateGeneratedTitle} onRename={onRename} />
       <div className="top-actions">
         <ConnectionStatus status={status} count={participantCount} />
-        <button className="icon-button mobile-share-button" type="button" onClick={onOpenShare} aria-label="Open share drawer">
+        <button
+          className="icon-button sidebar-toggle-button"
+          type="button"
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? "Hide share sidebar" : "Show share sidebar"}
+          aria-expanded={sidebarOpen}
+        >
           <PanelRight size={19} />
         </button>
       </div>

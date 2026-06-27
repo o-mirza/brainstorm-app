@@ -4,15 +4,74 @@ import { ROOM_TITLE_MAX_LENGTH, type Room } from "@brainstorm/shared";
 
 type Props = {
   room: Room;
+  animateGeneratedTitle: boolean;
   onRename: (title: string) => Promise<void>;
 };
 
-export default function RoomTitleEditor({ room, onRename }: Props) {
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+export default function RoomTitleEditor({ room, animateGeneratedTitle, onRename }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(room.title);
+  const [displayTitle, setDisplayTitle] = useState(animateGeneratedTitle ? "" : room.title);
+  const [generating, setGenerating] = useState(animateGeneratedTitle);
+  const [revealEdit, setRevealEdit] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const animatedRoomsRef = useRef(new Set<string>());
 
-  useEffect(() => setValue(room.title), [room.title]);
+  useEffect(() => {
+    setValue(room.title);
+    if (!generating) setDisplayTitle(room.title);
+  }, [generating, room.title]);
+
+  useEffect(() => {
+    if (!animateGeneratedTitle || animatedRoomsRef.current.has(room.id)) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      if (prefersReducedMotion()) {
+        setGenerating(false);
+        setRevealEdit(false);
+        setDisplayTitle(room.title);
+        setValue(room.title);
+        return;
+      }
+
+      setGenerating(true);
+      setRevealEdit(false);
+      setDisplayTitle("");
+      setValue("");
+
+      let nextTitle = "";
+      for (const char of room.title) {
+        if (cancelled) return;
+        nextTitle += char;
+        setDisplayTitle(nextTitle);
+        setValue(nextTitle);
+        await sleep(28);
+      }
+
+      if (cancelled) return;
+      setGenerating(false);
+      setRevealEdit(true);
+      animatedRoomsRef.current.add(room.id);
+      await sleep(420);
+      if (!cancelled) setRevealEdit(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [animateGeneratedTitle, room.id, room.title]);
 
   useEffect(() => {
     if (editing) inputRef.current?.focus();
@@ -29,9 +88,9 @@ export default function RoomTitleEditor({ room, onRename }: Props) {
   }
 
   return (
-    <div className={`room-title ${editing ? "editing" : ""}`}>
+    <div className={`room-title ${editing ? "editing" : ""} ${generating ? "generating" : ""} ${revealEdit ? "reveal-edit" : ""}`}>
       <button className="room-title-button" type="button" onClick={() => setEditing(true)} aria-label="Rename room">
-        {room.title}{" "}
+        {displayTitle || room.title}{" "}
         <span className="title-edit-cluster">
           <Pencil className="title-edit-icon" aria-hidden="true" />
         </span>

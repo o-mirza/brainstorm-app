@@ -5,4 +5,4 @@ export const IDEA_TEXT_MAX_LENGTH = 280;
 export const PARTICIPANT_ID_PREFIX = "p_";
 export const ROOM_ID_PREFIX = "r_";
 export const IDEA_ID_PREFIX = "i_";
-export const RECENT_ROOMS_LIMIT = 20;
+export const RECENT_ROOMS_LIMIT = 50;

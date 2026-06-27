@@ -1,9 +1,8 @@
 import type { Idea } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import RecentRoomsDialog from "../components/RecentRoomsDialog";
-import ShareDrawer from "../components/ShareDrawer";
 import ShareOverlay from "../components/ShareOverlay";
 import { useParticipantId } from "../hooks/useParticipantId";
 import { useRecentRooms } from "../hooks/useRecentRooms";
@@ -14,19 +13,20 @@ import { getRoomUrl } from "../lib/roomUrl";
 
 export default function RoomPage() {
   const params = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const roomSlug = params.roomSlug ?? "";
   const participantId = useParticipantId();
   const recent = useRecentRooms();
   const roomState = useRoom(roomSlug, participantId);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [shareOverlayOpen, setShareOverlayOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
+  const createdRoom = Boolean((location.state as { createdRoom?: boolean } | null)?.createdRoom);
 
   const onEvent = useCallback(roomState.applyServerEvent, [roomState.applyServerEvent]);
   const onUncertain = useCallback(() => {
     void roomState.actions.refresh();
-  }, [roomState.actions]);
+  }, [roomState.actions.refresh]);
   const connectionStatus = useRoomRealtime({ roomSlug, participantId, onEvent, onUncertain });
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export default function RoomPage() {
   async function createNewRoom() {
     const room = await createRoom();
     recent.rememberRoom(room, 0);
-    navigate(`/r/${room.slug}`);
+    navigate(`/r/${room.slug}`, { state: { createdRoom: true } });
   }
 
   async function rename(title: string) {
@@ -98,8 +98,8 @@ export default function RoomPage() {
         participantCount={roomState.participantCount}
         status={connectionStatus}
         recentRooms={recent.rooms}
+        animateGeneratedTitle={createdRoom}
         onRename={rename}
-        onOpenShare={() => setDrawerOpen(true)}
         onCreateRoom={() => void createNewRoom()}
         onShowRecent={() => setRecentOpen(true)}
         onExpandShare={() => setShareOverlayOpen(true)}
@@ -109,15 +109,6 @@ export default function RoomPage() {
         onToggleHeart={toggleHeart}
         onUpdateIdea={updateIdea}
         onDeleteIdea={deleteIdea}
-      />
-      <ShareDrawer
-        open={drawerOpen}
-        roomUrl={roomUrl}
-        recentRooms={recent.rooms}
-        onClose={() => setDrawerOpen(false)}
-        onCreateRoom={() => void createNewRoom()}
-        onShowRecent={() => setRecentOpen(true)}
-        onExpand={() => setShareOverlayOpen(true)}
       />
       {shareOverlayOpen ? <ShareOverlay roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
       {recentOpen ? <RecentRoomsDialog rooms={recent.rooms} onClose={() => setRecentOpen(false)} /> : null}
