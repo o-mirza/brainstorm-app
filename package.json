@@ -1,0 +1,22 @@
+{
+  "name": "brainstorm-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "dev": "pnpm --filter @brainstorm/shared build && pnpm --parallel --filter @brainstorm/web --filter @brainstorm/api dev",
+    "dev:web": "pnpm --filter @brainstorm/web dev",
+    "dev:api": "pnpm --filter @brainstorm/api dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "pretest": "pnpm --filter @brainstorm/shared build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "db:generate": "pnpm --filter @brainstorm/api db:generate",
+    "db:migrate": "pnpm --filter @brainstorm/api db:migrate"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0"
+  }
+}
