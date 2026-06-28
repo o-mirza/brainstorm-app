@@ -1,7 +1,9 @@
 import type { Idea, RecentRoom, Room } from "@brainstorm/shared";
+import { Download } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { ClientIdea } from "../hooks/useRoom";
+import { downloadIdeasCsv } from "../lib/ideasCsv";
 import type { ConnectionStatus as Status } from "../lib/types";
 import IdeaComposer from "./IdeaComposer";
 import IdeaList from "./IdeaList";
@@ -108,6 +110,10 @@ export default function AppShell(props: Props) {
     }
   };
 
+  function exportIdeasCsv() {
+    downloadIdeasCsv(props.room.slug, sortedIdeas);
+  }
+
   return (
     <div className={`app ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
       <TopBar
@@ -129,27 +135,38 @@ export default function AppShell(props: Props) {
                   <div className="ideas-count">
                     {props.ideas.length} {props.ideas.length === 1 ? "idea" : "ideas"}
                   </div>
-                  <div className="ideas-sort">
-                    <label htmlFor="sort-select" className="sr-only">Sort by</label>
-                    <div className="sort-select-wrapper">
-                      <select
-                        id="sort-select"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      >
-                        <option value="popular">Popular</option>
-                        <option value="newest">Newest</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="my-hearts">My Hearts</option>
-                        <option value="alphabetical">A-Z</option>
-                      </select>
-                      <span className="sort-trigger">
-                        Sort by: <strong>{getSortLabel(sortBy)}</strong>
-                        <svg viewBox="0 0 24 24" width="14" height="14" className="chevron-icon">
-                          <path d="M7 10l5 5 5-5z" fill="currentColor" />
-                        </svg>
-                      </span>
+                  <div className="ideas-actions">
+                    <div className="ideas-sort">
+                      <label htmlFor="sort-select" className="sr-only">Sort by</label>
+                      <div className="sort-select-wrapper">
+                        <select
+                          id="sort-select"
+                          value={sortBy}
+                          onChange={(e) => setSortBy(e.target.value as SortOption)}
+                        >
+                          <option value="popular">Popular</option>
+                          <option value="newest">Newest</option>
+                          <option value="oldest">Oldest</option>
+                          <option value="my-hearts">My Hearts</option>
+                          <option value="alphabetical">A-Z</option>
+                        </select>
+                        <span className="sort-trigger">
+                          Sort by: <strong>{getSortLabel(sortBy)}</strong>
+                          <svg viewBox="0 0 24 24" width="14" height="14" className="chevron-icon">
+                            <path d="M7 10l5 5 5-5z" fill="currentColor" />
+                          </svg>
+                        </span>
+                      </div>
                     </div>
+                    <button
+                      type="button"
+                      className="export-csv-button"
+                      onClick={exportIdeasCsv}
+                      aria-label="Export ideas as CSV"
+                      title="Export ideas as CSV"
+                    >
+                      <Download size={16} aria-hidden="true" />
+                    </button>
                   </div>
                 </div>
               )}

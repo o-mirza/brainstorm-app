@@ -181,6 +181,7 @@ button {
 .icon-button:focus-visible,
 .link-box:focus-within,
 .composer:focus-within,
+.export-csv-button:focus-visible,
 .idea-menu-button:focus-visible,
 .vote-button:focus-visible {
   outline: 2px solid var(--focus-outline);
@@ -322,6 +323,8 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
   max-width: 920px;
   margin: 0 auto 16px auto;
   padding: 0 4px;
@@ -331,6 +334,31 @@ button {
 
 .ideas-count {
   font-weight: 500;
+}
+
+.ideas-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.export-csv-button {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.export-csv-button:hover {
+  background-color: var(--surface-2);
+  color: var(--ink);
 }
 
 .sort-select-wrapper {
