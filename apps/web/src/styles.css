@@ -1171,8 +1171,12 @@ button {
 }
 
 .share-overlay .large-qr {
-  width: min(520px, calc(100vw - 48px));
-  height: auto;
+  --share-overlay-qr-size: min(520px, calc(100vw - 48px), calc(100dvh - 180px));
+
+  width: var(--share-overlay-qr-size);
+  height: var(--share-overlay-qr-size);
+  max-width: var(--share-overlay-qr-size);
+  max-height: var(--share-overlay-qr-size);
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1192,6 +1196,12 @@ button {
 
 .large-link-box {
   width: min(520px, calc(100vw - 48px));
+}
+
+@media (max-height: 560px) {
+  .share-overlay-panel {
+    gap: 14px;
+  }
 }
 
 .recent-list-wrap {
