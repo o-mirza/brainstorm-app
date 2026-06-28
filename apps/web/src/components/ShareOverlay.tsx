@@ -14,7 +14,7 @@ export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; on
 
   return (
     <div className="share-overlay" role="dialog" aria-modal="true" aria-label="Jump in" onMouseDown={onClose}>
-      <div className="share-overlay-panel" onMouseDown={(event) => event.stopPropagation()}>
+      <div className="share-overlay-panel">
         <button className="icon-button overlay-close" type="button" onClick={onClose} aria-label="Close share view">
           <X size={22} />
         </button>
@@ -27,7 +27,7 @@ export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; on
           className="large-qr"
           onClick={onClose}
         />
-        <div className="large-link-box">
+        <div className="large-link-box" onMouseDown={(event) => event.stopPropagation()}>
           <span>{roomUrl}</span>
           <CopyLinkButton value={roomUrl} />
         </div>
