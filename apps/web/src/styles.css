@@ -869,6 +869,10 @@ button {
   min-height: 0;
 }
 
+.permissions-section + .permissions-section {
+  margin-top: 8px;
+}
+
 .section-title-wrap {
   display: flex;
   align-items: center;
