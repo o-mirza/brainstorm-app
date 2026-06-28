@@ -41,14 +41,21 @@ export default function AppShell(props: Props) {
     setShareOpen((open) => !open);
   }
 
+  function handleSidebarAction(action: () => void) {
+    action();
+    if (isMobile) {
+      setShareOpen(false);
+    }
+  }
+
   function renderSidebar() {
     return (
       <Sidebar
         roomUrl={props.roomUrl}
         recentRooms={props.recentRooms}
-        onCreateRoom={props.onCreateRoom}
-        onShowRecent={props.onShowRecent}
-        onExpand={props.onExpandShare}
+        onCreateRoom={() => handleSidebarAction(props.onCreateRoom)}
+        onShowRecent={() => handleSidebarAction(props.onShowRecent)}
+        onExpand={() => handleSidebarAction(props.onExpandShare)}
       />
     );
   }
@@ -142,6 +149,7 @@ export default function AppShell(props: Props) {
             <IdeaComposer onSubmit={props.onCreateIdea} />
           </div>
         </main>
+        <div className="side-backdrop" onClick={() => setShareOpen(false)} />
         {renderSidebar()}
       </div>
     </div>

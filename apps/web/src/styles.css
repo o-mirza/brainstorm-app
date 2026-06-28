@@ -573,6 +573,10 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
+.side-backdrop {
+  display: none;
+}
+
 .side {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
@@ -895,6 +899,22 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .side-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 25;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 220ms ease;
+  }
+
+  .app.share-open .side-backdrop {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   .app-content > .side {
     position: absolute;
     top: 0;
@@ -904,6 +924,8 @@ button {
     display: grid;
     width: min(var(--sidebar), 88vw);
     min-width: 0;
+    background: var(--surface);
+    backdrop-filter: none;
     border-left: 1px solid var(--line);
     box-shadow: -18px 0 45px rgba(15, 15, 15, 0.16);
     opacity: 1;
