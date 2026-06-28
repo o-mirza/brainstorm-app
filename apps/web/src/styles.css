@@ -651,11 +651,10 @@ button {
 }
 
 .side {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
   min-width: var(--sidebar);
   width: var(--sidebar);
-  overflow: hidden;
+  overflow: auto;
+  padding: 20px;
   border-left: 1px solid var(--line);
   background: var(--side-bg);
   backdrop-filter: blur(16px);
@@ -675,18 +674,13 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 20px 20px 12px;
+  padding-bottom: 12px;
 }
 
 .side-title {
   margin: 0;
   font-size: 14px;
   font-weight: 760;
-}
-
-.side-body {
-  overflow: auto;
-  padding: 0 20px 20px;
 }
 
 .qr-wrap {
@@ -1336,7 +1330,6 @@ button {
     right: 0;
     bottom: 0;
     z-index: 30;
-    display: grid;
     width: min(var(--sidebar), 88vw);
     min-width: 0;
     background: var(--surface);
