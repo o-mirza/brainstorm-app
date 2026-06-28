@@ -548,17 +548,29 @@ button {
   top: calc(50% + 16px);
   right: 10px;
   z-index: 30;
-  display: none;
+  display: grid;
   min-width: 136px;
   padding: 5px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--surface);
   box-shadow: 0 14px 30px rgba(15, 15, 15, 0.16);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.98);
+  transform-origin: top right;
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease,
+    visibility 150ms ease;
 }
 
 .idea-menu.open {
-  display: grid;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
 }
 
 .idea-menu button {
