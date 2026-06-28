@@ -1,16 +1,24 @@
 import type { RecentRoom } from "@brainstorm/shared";
 import { X } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function RecentRoomsDialog({ rooms, onClose }: { rooms: RecentRoom[]; onClose: () => void }) {
   const navigate = useNavigate();
+  const [closing, setClosing] = useState(false);
+
+  function close() {
+    if (closing) return;
+    setClosing(true);
+    window.setTimeout(onClose, 150);
+  }
 
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className={`modal-backdrop ${closing ? "closing" : ""}`} role="presentation" onMouseDown={close}>
       <div className="recent-dialog" role="dialog" aria-modal="true" aria-label="Recent rooms" onMouseDown={(event) => event.stopPropagation()}>
         <div className="modal-head">
           <h2>Recent rooms</h2>
-          <button className="icon-button" type="button" onClick={onClose} aria-label="Close">
+          <button className="icon-button" type="button" onClick={close} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -22,7 +30,7 @@ export default function RecentRoomsDialog({ rooms, onClose }: { rooms: RecentRoo
                 key={room.roomSlug}
                 type="button"
                 onClick={() => {
-                  onClose();
+                  close();
                   navigate(`/r/${room.roomSlug}`);
                 }}
               >
