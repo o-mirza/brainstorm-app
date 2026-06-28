@@ -6,6 +6,7 @@ import AppShell from "../components/AppShell";
 import DeleteRoomModal from "../components/DeleteRoomModal";
 import RecentRoomsDialog from "../components/RecentRoomsDialog";
 import ShareOverlay from "../components/ShareOverlay";
+import { useToast } from "../components/ToastProvider";
 import { useParticipantId } from "../hooks/useParticipantId";
 import { useRecentRooms } from "../hooks/useRecentRooms";
 import { useRoom } from "../hooks/useRoom";
@@ -18,6 +19,7 @@ export default function RoomPage() {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const toast = useToast();
   const roomSlug = params.roomSlug ?? "";
   const participantId = useParticipantId();
   const adminTokenFromUrl = useMemo(() => getAdminTokenFromSearch(location.search), [location.search]);
@@ -90,32 +92,64 @@ export default function RoomPage() {
   }, [canDeleteRoom]);
 
   async function createNewRoom() {
-    const { room, adminToken: nextAdminToken } = await createRoom();
-    storeRoomAdminToken(room.slug, nextAdminToken);
-    rememberRoom(room, 0);
-    navigate(`/r/${room.slug}`, { state: { createdRoom: true } });
+    try {
+      const { room, adminToken: nextAdminToken } = await createRoom();
+      storeRoomAdminToken(room.slug, nextAdminToken);
+      rememberRoom(room, 0);
+      navigate(`/r/${room.slug}`, { state: { createdRoom: true } });
+    } catch {
+      toast.error("Could not create room");
+    }
   }
 
   async function rename(title: string) {
-    const room = await roomState.actions.renameRoom(title);
-    updateRoomTitle(room);
+    try {
+      const room = await roomState.actions.renameRoom(title);
+      updateRoomTitle(room);
+    } catch (renameError) {
+      toast.error("Could not rename room");
+      throw renameError;
+    }
   }
 
   async function updateIdea(ideaId: string, text: string) {
-    await roomState.actions.updateIdea(ideaId, text);
+    try {
+      await roomState.actions.updateIdea(ideaId, text);
+    } catch (updateError) {
+      toast.error("Could not save idea");
+      throw updateError;
+    }
   }
 
   async function deleteIdea(ideaId: string) {
-    await roomState.actions.deleteIdea(ideaId);
+    try {
+      const deletePromise = roomState.actions.deleteIdea(ideaId);
+      toast.success("Idea deleted");
+      await deletePromise;
+    } catch (deleteError) {
+      toast.error("Could not delete idea");
+      throw deleteError;
+    }
   }
 
   async function toggleHeart(idea: Idea) {
-    await roomState.actions.toggleHeart(idea);
+    try {
+      await roomState.actions.toggleHeart(idea);
+    } catch (heartError) {
+      toast.error(idea.heartedByMe ? "Could not remove heart" : "Could not heart idea");
+      throw heartError;
+    }
   }
 
   async function deleteRoom() {
-    await roomState.actions.deleteRoom();
-    removeRoom(roomSlug);
+    try {
+      await roomState.actions.deleteRoom();
+      removeRoom(roomSlug);
+      toast.success("Room deleted");
+    } catch (deleteError) {
+      toast.error("Could not delete room");
+      throw deleteError;
+    }
   }
 
   async function updateParticipantPermissions(permissions: ParticipantPermissions) {
@@ -206,7 +240,12 @@ export default function RoomPage() {
         onShowPermissions={() => setPermissionsOpen(true)}
         onDeleteRoom={() => setDeleteOpen(true)}
         onCreateIdea={async (text) => {
-          await roomState.actions.createIdea(text);
+          try {
+            await roomState.actions.createIdea(text);
+          } catch (createError) {
+            toast.error("Could not create idea");
+            throw createError;
+          }
         }}
         onToggleHeart={toggleHeart}
         onUpdateIdea={updateIdea}

@@ -1,13 +1,19 @@
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { useToast } from "./ToastProvider";
 
 export default function CopyLinkButton({ value, label = "Copy link" }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
+  const toast = useToast();
 
   async function copy() {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1400);
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      toast.error("Could not copy link");
+    }
   }
 
   return (

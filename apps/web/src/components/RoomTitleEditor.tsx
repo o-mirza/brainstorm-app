@@ -105,7 +105,11 @@ export default function RoomTitleEditor({ room, animateGeneratedTitle, canRename
       setValue(room.title);
       return;
     }
-    await onRename(next);
+    try {
+      await onRename(next);
+    } catch {
+      setValue(room.title);
+    }
   }
 
   return (

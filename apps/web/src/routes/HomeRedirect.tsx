@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { createRoom } from "../lib/api";
 import { useRecentRooms } from "../hooks/useRecentRooms";
 import { storeRoomAdminToken } from "../lib/adminAccess";
+import { useToast } from "../components/ToastProvider";
 
 export default function HomeRedirect() {
   const navigate = useNavigate();
   const { rememberRoom } = useRecentRooms();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const startedRef = useRef(false);
 
@@ -21,9 +23,10 @@ export default function HomeRedirect() {
         navigate(`/r/${room.slug}`, { replace: true, state: { createdRoom: true } });
       } catch (createError) {
         setError(createError instanceof Error ? createError.message : "Could not create room.");
+        toast.error("Could not create room");
       }
     })();
-  }, [navigate, rememberRoom]);
+  }, [navigate, rememberRoom, toast]);
 
   return (
     <main className="route-state">

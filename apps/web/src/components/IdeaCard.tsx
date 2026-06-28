@@ -2,6 +2,7 @@ import type { Idea } from "@brainstorm/shared";
 import { Clipboard, Heart, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import TextEditModal from "./TextEditModal";
+import { useToast } from "./ToastProvider";
 
 type Props = {
   idea: Idea;
@@ -14,6 +15,7 @@ type Props = {
 };
 
 const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, onToggleHeart, onUpdate, onDelete, canHeart, canEdit, canDelete }, ref) {
+  const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
   const [pulsing, setPulsing] = useState(false);
@@ -38,6 +40,17 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, onTogg
     void onToggleHeart(idea).catch(() => {
       // The optimistic room state rolls back on failure.
     });
+  }
+
+  async function copyText() {
+    try {
+      await navigator.clipboard.writeText(idea.text);
+      toast.success("Copied idea text");
+    } catch {
+      toast.error("Could not copy idea text");
+    } finally {
+      setMenuOpen(false);
+    }
   }
 
   return (
@@ -74,11 +87,11 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, onTogg
               <Pencil size={15} /> Edit
             </button>
           ) : null}
-          <button type="button" onClick={() => { void navigator.clipboard.writeText(idea.text); setMenuOpen(false); }}>
+          <button type="button" onClick={() => { void copyText(); }}>
             <Clipboard size={15} /> Copy text
           </button>
           {canDelete ? (
-            <button type="button" data-action="delete" onClick={() => { setMenuOpen(false); void onDelete(idea.id); }}>
+            <button type="button" data-action="delete" onClick={() => { setMenuOpen(false); void onDelete(idea.id).catch(() => undefined); }}>
               <Trash2 size={15} /> Delete
             </button>
           ) : null}
