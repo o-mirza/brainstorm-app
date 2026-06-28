@@ -859,72 +859,160 @@ button {
 }
 
 .permissions-section {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   min-height: 0;
 }
 
-.permissions-section h3 {
+.section-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-title-wrap h3 {
+  margin: 0;
   color: var(--ink);
   font-size: 13px;
-  font-weight: 720;
+  font-weight: 700;
+}
+
+.section-icon {
+  color: var(--muted);
+}
+
+.admin-icon,
+.participants-icon {
+  color: var(--ink);
 }
 
 .permissions-section p {
   margin: 0;
   color: var(--muted);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
-.permissions-grid-wrap {
-  min-height: 0;
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.permissions-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.permission-tile {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+.permission-item {
+  display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 30px;
-  padding: 4px 8px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 6px;
   background: var(--surface);
+  transition: all 100ms ease;
+  cursor: pointer;
+  user-select: none;
 }
 
-.permission-tile span {
-  display: grid;
-  gap: 2px;
+.permission-item:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+
+.permission-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
-.permission-tile strong {
+.permission-label {
   color: var(--ink);
   font-size: 12px;
-  line-height: 1.2;
+  font-weight: 600;
 }
 
-.permission-tile small {
+.permission-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.permission-status.loading {
   color: var(--muted);
-  font-size: 11px;
-  line-height: 1.25;
 }
 
-.permission-tile input {
-  width: 18px;
+.permission-status.error {
+  color: var(--heart);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
   height: 18px;
-  accent-color: var(--ink);
+  flex-shrink: 0;
 }
 
-.permission-tile.is-pending {
-  opacity: 0.72;
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--line-strong);
+  transition: all 120ms ease;
+  border-radius: 18px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--surface);
+  transition: all 120ms ease;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--ink);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(16px);
+}
+
+.permission-item.is-pending {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.permission-item.has-error {
+  border-color: var(--heart);
 }
 
 .modal-backdrop.closing .edit-modal,
@@ -1234,29 +1322,11 @@ button {
 }
 
 @media (max-width: 520px) {
-  .permissions-grid-wrap {
-    position: relative;
-    max-height: min(250px, calc(100dvh - 330px));
-    min-height: 0;
-  }
-
-  .permissions-grid-wrap::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 36px;
-    pointer-events: none;
-    background: linear-gradient(to top, var(--surface) 0%, transparent 100%);
-  }
-
-  .permissions-grid {
-    grid-template-columns: 1fr;
-    max-height: inherit;
+  .permissions-list {
+    max-height: min(240px, calc(100dvh - 330px));
     overflow: auto;
-    padding-bottom: 18px;
     overscroll-behavior: contain;
+    padding-bottom: 8px;
   }
 }
 
