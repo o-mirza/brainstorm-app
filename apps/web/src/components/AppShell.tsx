@@ -136,6 +136,15 @@ export default function AppShell(props: Props) {
                     {props.ideas.length} {props.ideas.length === 1 ? "idea" : "ideas"}
                   </div>
                   <div className="ideas-actions">
+                    <button
+                      type="button"
+                      className="export-csv-button"
+                      onClick={exportIdeasCsv}
+                      aria-label="Export ideas as CSV"
+                      title="Export ideas as CSV"
+                    >
+                      <Download size={16} aria-hidden="true" />
+                    </button>
                     <div className="ideas-sort">
                       <label htmlFor="sort-select" className="sr-only">Sort by</label>
                       <div className="sort-select-wrapper">
@@ -158,15 +167,6 @@ export default function AppShell(props: Props) {
                         </span>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      className="export-csv-button"
-                      onClick={exportIdeasCsv}
-                      aria-label="Export ideas as CSV"
-                      title="Export ideas as CSV"
-                    >
-                      <Download size={16} aria-hidden="true" />
-                    </button>
                   </div>
                 </div>
               )}
