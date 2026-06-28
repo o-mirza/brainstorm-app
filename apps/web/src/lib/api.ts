@@ -1,6 +1,7 @@
 import type {
   CreateIdeaResponse,
   CreateRoomResponse,
+  DeleteRoomResponse,
   GetRoomResponse,
   HeartIdeaResponse,
   Idea,
@@ -56,6 +57,12 @@ export async function renameRoom(roomSlug: string, title: string): Promise<Room>
     body: JSON.stringify({ title })
   });
   return data.room;
+}
+
+export async function deleteRoom(roomSlug: string): Promise<DeleteRoomResponse> {
+  return request<DeleteRoomResponse>(`/api/rooms/${roomSlug}`, {
+    method: "DELETE"
+  });
 }
 
 export async function createIdea(roomSlug: string, participantId: string, text: string, clientMutationId?: string): Promise<Idea> {

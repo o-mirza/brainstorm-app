@@ -2,6 +2,7 @@ import type { Idea } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
+import DeleteRoomModal from "../components/DeleteRoomModal";
 import RecentRoomsDialog from "../components/RecentRoomsDialog";
 import ShareOverlay from "../components/ShareOverlay";
 import { useParticipantId } from "../hooks/useParticipantId";
@@ -17,10 +18,11 @@ export default function RoomPage() {
   const navigate = useNavigate();
   const roomSlug = params.roomSlug ?? "";
   const participantId = useParticipantId();
-  const { rooms, rememberRoom, updateRoomTitle } = useRecentRooms();
+  const { rooms, rememberRoom, removeRoom, updateRoomTitle } = useRecentRooms();
   const roomState = useRoom(roomSlug, participantId);
   const [shareOverlayOpen, setShareOverlayOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const createdRoom = Boolean((location.state as { createdRoom?: boolean } | null)?.createdRoom);
 
   const onEvent = useCallback(roomState.applyServerEvent, [roomState.applyServerEvent]);
@@ -34,6 +36,14 @@ export default function RoomPage() {
       rememberRoom(roomState.room, roomState.ideas.length);
     }
   }, [rememberRoom, roomState.ideas.length, roomState.room]);
+
+  useEffect(() => {
+    if (roomState.loadState === "deleted") {
+      removeRoom(roomSlug);
+      setShareOverlayOpen(false);
+      setDeleteOpen(false);
+    }
+  }, [removeRoom, roomSlug, roomState.loadState]);
 
   const roomUrl = useMemo(() => getRoomUrl(roomSlug), [roomSlug]);
 
@@ -60,6 +70,11 @@ export default function RoomPage() {
     await roomState.actions.toggleHeart(idea);
   }
 
+  async function deleteRoom() {
+    await roomState.actions.deleteRoom();
+    removeRoom(roomSlug);
+  }
+
   if (roomState.loadState === "loading") {
     return (
       <main className="route-state">
@@ -73,6 +88,28 @@ export default function RoomPage() {
       <>
         <main className="route-state">
           <h1>Room does not exist</h1>
+          <button type="button" onClick={() => void createNewRoom()}>
+            New room
+          </button>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setRecentOpen(true)}
+          >
+            Recent rooms
+          </button>
+        </main>
+        {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+      </>
+    );
+  }
+
+  if (roomState.loadState === "deleted") {
+    return (
+      <>
+        <main className="route-state">
+          <h1>Room deleted</h1>
+          <p>This room and its ideas were deleted for everyone with the link.</p>
           <button type="button" onClick={() => void createNewRoom()}>
             New room
           </button>
@@ -112,6 +149,7 @@ export default function RoomPage() {
         onCreateRoom={() => void createNewRoom()}
         onShowRecent={() => setRecentOpen(true)}
         onExpandShare={() => setShareOverlayOpen(true)}
+        onDeleteRoom={() => setDeleteOpen(true)}
         onCreateIdea={async (text) => {
           await roomState.actions.createIdea(text);
         }}
@@ -121,6 +159,14 @@ export default function RoomPage() {
       />
       {shareOverlayOpen ? <ShareOverlay roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
       {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+      {deleteOpen ? (
+        <DeleteRoomModal
+          roomTitle={roomState.room.title}
+          ideaCount={roomState.ideas.length}
+          onClose={() => setDeleteOpen(false)}
+          onConfirm={deleteRoom}
+        />
+      ) : null}
     </>
   );
 }

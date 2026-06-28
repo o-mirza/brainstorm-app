@@ -15,6 +15,11 @@ export type RenameRoomResponse = {
   clientMutationId?: string;
 };
 
+export type DeleteRoomResponse = {
+  ok: true;
+  roomSlug: string;
+};
+
 export type CreateIdeaRequest = {
   text: string;
   clientMutationId?: string;
@@ -74,6 +79,10 @@ export type ServerWsEvent =
       type: "room.updated";
       room: Room;
       clientMutationId?: string;
+    }
+  | {
+      type: "room.deleted";
+      roomSlug: string;
     }
   | {
       type: "idea.created";

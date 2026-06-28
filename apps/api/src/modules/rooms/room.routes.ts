@@ -1,5 +1,6 @@
 import type {
   CreateRoomResponse,
+  DeleteRoomResponse,
   GetRoomResponse,
   RenameRoomRequest,
   RenameRoomResponse
@@ -9,7 +10,7 @@ import { ZodError } from "zod";
 import { makeError } from "../../shared/http.js";
 import { parseParticipantHeader, roomSlugSchema } from "../../shared/validation.js";
 import type { RealtimeGateway } from "../realtime/realtime.gateway.js";
-import { createRoom, getRoomSnapshot, renameRoom } from "./room.service.js";
+import { createRoom, deleteRoom, getRoomSnapshot, renameRoom } from "./room.service.js";
 import { renameRoomRequestSchema } from "./room.schemas.js";
 
 function asBadRequest(error: unknown): Error {
@@ -48,4 +49,15 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
       }
     }
   );
+
+  app.delete<{ Params: { roomSlug: string } }>("/api/rooms/:roomSlug", async (request): Promise<DeleteRoomResponse> => {
+    try {
+      const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
+      await deleteRoom(roomSlug);
+      realtime.broadcastRoomDeleted(roomSlug);
+      return { ok: true, roomSlug };
+    } catch (error) {
+      throw asBadRequest(error);
+    }
+  });
 }

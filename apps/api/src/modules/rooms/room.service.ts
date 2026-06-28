@@ -156,6 +156,14 @@ export async function renameRoom(roomSlug: string, title: string): Promise<Room>
   return mapRoom(room);
 }
 
+export async function deleteRoom(roomSlug: string): Promise<void> {
+  const [room] = await db.delete(rooms).where(eq(rooms.slug, roomSlug)).returning({ slug: rooms.slug });
+
+  if (!room) {
+    throw makeError("room_not_found", "Room does not exist.", 404);
+  }
+}
+
 export async function touchRoom(roomId: string): Promise<void> {
   await db.update(rooms).set({ updatedAt: new Date() }).where(eq(rooms.id, roomId));
 }

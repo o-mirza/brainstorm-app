@@ -59,5 +59,13 @@ export function useRecentRooms() {
     writeRecentRooms(next);
   }, []);
 
-  return useMemo(() => ({ rooms, rememberRoom, updateRoomTitle }), [rememberRoom, rooms, updateRoomTitle]);
+  const removeRoom = useCallback((roomSlug: string) => {
+    const next = readRecentRooms().filter((item) => item.roomSlug !== roomSlug);
+    writeRecentRooms(next);
+  }, []);
+
+  return useMemo(
+    () => ({ rooms, rememberRoom, removeRoom, updateRoomTitle }),
+    [rememberRoom, removeRoom, rooms, updateRoomTitle]
+  );
 }

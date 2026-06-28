@@ -4,7 +4,7 @@ import * as api from "../lib/api";
 import { createClientMutationId } from "../lib/ids";
 import { sortIdeas } from "../lib/sortIdeas";
 
-type LoadState = "loading" | "ready" | "not-found" | "error";
+type LoadState = "loading" | "ready" | "not-found" | "deleted" | "error";
 export type ClientIdea = Idea & {
   renderKey: string;
   clientMutationId?: string;
@@ -43,8 +43,19 @@ export function useRoom(roomSlug: string, participantId: string) {
   const heartVersionsRef = useRef(new Map<string, number>());
   const canceledCreateMutationIdsRef = useRef(new Set<string>());
   const createHeartIntentsRef = useRef(new Map<string, boolean>());
+  const deletedRef = useRef(false);
+
+  useEffect(() => {
+    deletedRef.current = false;
+    setRoom(null);
+    setIdeas([]);
+    setParticipantCount(0);
+    setLoadState("loading");
+    setError(null);
+  }, [roomSlug]);
 
   const applySnapshot = useCallback((snapshot: RoomSnapshot) => {
+    deletedRef.current = false;
     setRoom(snapshot.room);
     setIdeas((current) => {
       const renderKeys = new Map(current.filter((idea) => !idea.id.startsWith("optimistic_")).map((idea) => [idea.id, idea.renderKey]));
@@ -55,7 +66,17 @@ export function useRoom(roomSlug: string, participantId: string) {
     setError(null);
   }, []);
 
+  const applyDeleted = useCallback(() => {
+    deletedRef.current = true;
+    setRoom(null);
+    setIdeas([]);
+    setParticipantCount(0);
+    setLoadState("deleted");
+    setError(null);
+  }, []);
+
   const fetchSnapshot = useCallback(async () => {
+    if (deletedRef.current) return;
     setLoadState((current) => (current === "ready" ? current : "loading"));
     try {
       applySnapshot(await api.getRoomSnapshot(roomSlug, participantId));
@@ -79,6 +100,13 @@ export function useRoom(roomSlug: string, participantId: string) {
 
       if (event.type === "room.updated") {
         setRoom(event.room);
+        return;
+      }
+
+      if (event.type === "room.deleted") {
+        if (event.roomSlug === roomSlug) {
+          applyDeleted();
+        }
         return;
       }
 
@@ -134,7 +162,7 @@ export function useRoom(roomSlug: string, participantId: string) {
         setIdeas((current) => current.filter((idea) => idea.id !== event.idea.id));
       }
     },
-    [applySnapshot, fetchSnapshot, participantId]
+    [applyDeleted, applySnapshot, fetchSnapshot, participantId, roomSlug]
   );
 
   const replaceIdea = useCallback((nextIdea: Idea, clientMutationId?: string) => {
@@ -177,6 +205,10 @@ export function useRoom(roomSlug: string, participantId: string) {
           if (previousRoom) setRoom(previousRoom);
           throw renameError;
         }
+      },
+      deleteRoom: async () => {
+        await api.deleteRoom(roomSlug);
+        applyDeleted();
       },
       createIdea: async (text: string) => {
         const clientMutationId = createClientMutationId();
@@ -300,7 +332,7 @@ export function useRoom(roomSlug: string, participantId: string) {
         }
       }
     }),
-    [fetchSnapshot, ideas, participantId, replaceIdea, replaceOptimisticIdea, room, roomSlug]
+    [applyDeleted, fetchSnapshot, ideas, participantId, replaceIdea, replaceOptimisticIdea, room, roomSlug]
   );
 
   return {

@@ -105,6 +105,18 @@ export class RealtimeGateway {
     }
   }
 
+  broadcastRoomDeleted(roomSlug: string): void {
+    const roomSet = this.roomConnections.get(roomSlug);
+    if (!roomSet) return;
+
+    const connectionIds = [...roomSet];
+    for (const connectionId of connectionIds) {
+      this.send(connectionId, { type: "room.deleted", roomSlug });
+      this.connections.get(connectionId)?.roomSlugs.delete(roomSlug);
+    }
+    this.roomConnections.delete(roomSlug);
+  }
+
   send(connectionId: string, event: ServerWsEvent): void {
     const connection = this.connections.get(connectionId);
     if (!connection) return;

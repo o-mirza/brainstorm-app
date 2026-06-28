@@ -20,6 +20,7 @@ type Props = {
   onCreateRoom: () => void;
   onShowRecent: () => void;
   onExpandShare: () => void;
+  onDeleteRoom: () => void;
   onCreateIdea: (text: string) => Promise<void>;
   onToggleHeart: (idea: Idea) => Promise<void>;
   onUpdateIdea: (ideaId: string, text: string) => Promise<void>;
@@ -56,6 +57,7 @@ export default function AppShell(props: Props) {
         onCreateRoom={() => handleSidebarAction(props.onCreateRoom)}
         onShowRecent={() => handleSidebarAction(props.onShowRecent)}
         onExpand={() => handleSidebarAction(props.onExpandShare)}
+        onDeleteRoom={() => handleSidebarAction(props.onDeleteRoom)}
       />
     );
   }

@@ -754,6 +754,18 @@ button {
   color: var(--ink);
 }
 
+.room-actions-danger {
+  margin-top: 10px;
+}
+
+.room-actions button.destructive-action {
+  color: #a73446;
+}
+
+.room-actions button.destructive-action:hover {
+  color: #8d2636;
+}
+
 .modal-backdrop,
 .share-overlay {
   position: fixed;
@@ -836,9 +848,44 @@ button {
   color: var(--ink);
 }
 
+.modal-actions button.danger-button {
+  background: #a73446;
+  color: #ffffff;
+}
+
 .modal-actions button:disabled {
   opacity: 0.25;
   cursor: not-allowed;
+}
+
+.delete-room-copy {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.delete-room-summary {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+
+.delete-room-summary strong {
+  overflow-wrap: anywhere;
+}
+
+.delete-room-summary span,
+.modal-error {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.modal-error {
+  margin: 0;
+  color: #a73446;
 }
 
 .share-overlay {
