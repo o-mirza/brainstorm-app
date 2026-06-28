@@ -896,8 +896,16 @@ button {
   font-size: 24px;
 }
 
-.route-state a {
+.route-state a,
+.route-state button.link-button {
+  background: none;
+  border: none;
+  font: inherit;
   color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  min-height: unset;
 }
 
 @media (max-width: 860px) {

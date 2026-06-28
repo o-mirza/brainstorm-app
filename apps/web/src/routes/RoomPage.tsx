@@ -1,6 +1,6 @@
 import type { Idea } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import RecentRoomsDialog from "../components/RecentRoomsDialog";
 import ShareOverlay from "../components/ShareOverlay";
@@ -70,13 +70,22 @@ export default function RoomPage() {
 
   if (roomState.loadState === "not-found") {
     return (
-      <main className="route-state">
-        <h1>Room does not exist</h1>
-        <button type="button" onClick={() => void createNewRoom()}>
-          Create a new room
-        </button>
-        <Link to="/">Start over</Link>
-      </main>
+      <>
+        <main className="route-state">
+          <h1>Room does not exist</h1>
+          <button type="button" onClick={() => void createNewRoom()}>
+            New room
+          </button>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setRecentOpen(true)}
+          >
+            Recent rooms
+          </button>
+        </main>
+        {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+      </>
     );
   }
 
