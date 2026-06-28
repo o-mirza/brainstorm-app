@@ -17,6 +17,22 @@ function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function renderTitleWithEditIcon(title: string) {
+  const [, leadingText = "", finalWord = title] = title.match(/^(.*\s)(\S+)$/) ?? [];
+
+  return (
+    <>
+      {leadingText}
+      <span className="title-edit-nowrap">
+        {finalWord}{" "}
+        <span className="title-edit-cluster">
+          <Pencil className="title-edit-icon" aria-hidden="true" />
+        </span>
+      </span>
+    </>
+  );
+}
+
 export default function RoomTitleEditor({ room, animateGeneratedTitle, canRename, onRename }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(room.title);
@@ -102,10 +118,7 @@ export default function RoomTitleEditor({ room, animateGeneratedTitle, canRename
           onClick={() => setEditing(true)}
           aria-label="Rename room"
         >
-          {displayTitle || room.title}{" "}
-          <span className="title-edit-cluster">
-            <Pencil className="title-edit-icon" aria-hidden="true" />
-          </span>
+          {renderTitleWithEditIcon(displayTitle || room.title)}
         </button>
       ) : (
         <span
