@@ -96,7 +96,7 @@ button {
   transition: grid-template-columns 220ms cubic-bezier(0.2, 0, 0.2, 1);
 }
 
-.app.share-closed .app-content {
+.app.sidebar-closed .app-content {
   grid-template-columns: minmax(0, 1fr) 0;
 }
 
@@ -646,11 +646,11 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-.side-backdrop {
+.sidebar-backdrop {
   display: none;
 }
 
-.side {
+.sidebar {
   min-width: var(--sidebar);
   width: var(--sidebar);
   overflow: auto;
@@ -663,13 +663,13 @@ button {
     transform 220ms cubic-bezier(0.2, 0, 0.2, 1);
 }
 
-.app.share-closed .app-content > .side {
+.app.sidebar-closed .app-content > .sidebar {
   opacity: 0;
   pointer-events: none;
   transform: translateX(20px);
 }
 
-.side-head {
+.sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -677,7 +677,7 @@ button {
   padding-bottom: 12px;
 }
 
-.side-title {
+.sidebar-title {
   margin: 0;
   font-size: 14px;
   font-weight: 760;
@@ -1308,7 +1308,7 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .side-backdrop {
+  .sidebar-backdrop {
     display: block;
     position: absolute;
     inset: 0;
@@ -1319,12 +1319,12 @@ button {
     transition: opacity 220ms ease;
   }
 
-  .app.share-open .side-backdrop {
+  .app.sidebar-open .sidebar-backdrop {
     opacity: 1;
     pointer-events: auto;
   }
 
-  .app-content > .side {
+  .app-content > .sidebar {
     position: absolute;
     top: 0;
     right: 0;
@@ -1343,12 +1343,12 @@ button {
       opacity 180ms ease;
   }
 
-  .app.share-open .app-content > .side {
+  .app.sidebar-open .app-content > .sidebar {
     pointer-events: auto;
     transform: translateX(0);
   }
 
-  .app.share-closed .app-content > .side {
+  .app.sidebar-closed .app-content > .sidebar {
     opacity: 0;
     transform: translateX(100%);
   }

@@ -236,7 +236,7 @@ export default function RoomPage() {
         onRename={rename}
         onCreateRoom={() => void createNewRoom()}
         onShowRecent={() => setRecentOpen(true)}
-        onExpandShare={() => setShareOverlayOpen(true)}
+        onOpenShareOverlay={() => setShareOverlayOpen(true)}
         onShowPermissions={() => setPermissionsOpen(true)}
         onDeleteRoom={() => setDeleteOpen(true)}
         onCreateIdea={async (text) => {

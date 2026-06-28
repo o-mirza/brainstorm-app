@@ -26,7 +26,7 @@ type Props = {
   onRename: (title: string) => Promise<void>;
   onCreateRoom: () => void;
   onShowRecent: () => void;
-  onExpandShare: () => void;
+  onOpenShareOverlay: () => void;
   onShowPermissions: () => void;
   onDeleteRoom: () => void;
   onCreateIdea: (text: string) => Promise<void>;
@@ -39,21 +39,21 @@ type SortOption = 'popular' | 'newest' | 'oldest' | 'my-hearts' | 'alphabetical'
 
 export default function AppShell(props: Props) {
   const isMobile = useMediaQuery("(max-width: 860px)");
-  const [shareOpen, setShareOpen] = useState(!isMobile);
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
 
   useEffect(() => {
-    setShareOpen(!isMobile);
+    setSidebarOpen(!isMobile);
   }, [isMobile]);
 
   function toggleSidebar() {
-    setShareOpen((open) => !open);
+    setSidebarOpen((open) => !open);
   }
 
   function handleSidebarAction(action: () => void) {
     action();
     if (isMobile) {
-      setShareOpen(false);
+      setSidebarOpen(false);
     }
   }
 
@@ -66,7 +66,7 @@ export default function AppShell(props: Props) {
         recentRooms={props.recentRooms}
         onCreateRoom={() => handleSidebarAction(props.onCreateRoom)}
         onShowRecent={() => handleSidebarAction(props.onShowRecent)}
-        onExpand={() => handleSidebarAction(props.onExpandShare)}
+        onOpenShareOverlay={() => handleSidebarAction(props.onOpenShareOverlay)}
         onShowPermissions={() => handleSidebarAction(props.onShowPermissions)}
         onDeleteRoom={() => handleSidebarAction(props.onDeleteRoom)}
       />
@@ -109,7 +109,7 @@ export default function AppShell(props: Props) {
   };
 
   return (
-    <div className={`app ${shareOpen ? "share-open" : "share-closed"}`}>
+    <div className={`app ${sidebarOpen ? "sidebar-open" : "sidebar-closed"}`}>
       <TopBar
         room={props.room}
         participantCount={props.participantCount}
@@ -117,7 +117,7 @@ export default function AppShell(props: Props) {
         animateGeneratedTitle={props.animateGeneratedTitle}
         canManageRoom={props.canRenameRoom}
         onRename={props.onRename}
-        sidebarOpen={shareOpen}
+        sidebarOpen={sidebarOpen}
         onToggleSidebar={toggleSidebar}
       />
       <div className="app-content">
@@ -167,7 +167,7 @@ export default function AppShell(props: Props) {
             {props.canAddIdeas ? <IdeaComposer key={props.room.slug} onSubmit={props.onCreateIdea} /> : null}
           </div>
         </main>
-        <div className="side-backdrop" onClick={() => setShareOpen(false)} />
+        <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
         {renderSidebar()}
       </div>
     </div>

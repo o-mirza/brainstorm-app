@@ -11,7 +11,7 @@ type Props = {
   recentRooms: RecentRoom[];
   onCreateRoom: () => void;
   onShowRecent: () => void;
-  onExpand: () => void;
+  onOpenShareOverlay: () => void;
   onShowPermissions: () => void;
   onDeleteRoom: () => void;
 };
@@ -23,22 +23,22 @@ export default function Sidebar({
   recentRooms,
   onCreateRoom,
   onShowRecent,
-  onExpand,
+  onOpenShareOverlay,
   onShowPermissions,
   onDeleteRoom
 }: Props) {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <aside className="side">
-      <div className="side-head">
-        <h2 className="side-title">Share</h2>
-        <button className="icon-button" type="button" onClick={onExpand} aria-label="Expand sharing view">
+    <aside className="sidebar">
+      <div className="sidebar-header">
+        <h2 className="sidebar-title">Share</h2>
+        <button className="icon-button" type="button" onClick={onOpenShareOverlay} aria-label="Expand sharing view">
           <Expand size={18} />
         </button>
       </div>
-      <div className="quiet-panel">
-        <button className="qr-wrap qr-button" type="button" onClick={onExpand} aria-label="Expand sharing view">
+      <div className="share-panel">
+        <button className="qr-wrap qr-button" type="button" onClick={onOpenShareOverlay} aria-label="Expand sharing view">
           <QRCodeSVG
             value={roomUrl}
             size={242}
