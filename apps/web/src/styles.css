@@ -148,6 +148,30 @@ button {
   vertical-align: -3px;
 }
 
+.room-title.generating .title-edit-icon {
+  opacity: 0;
+  transform: scale(0.72);
+}
+
+.room-title.reveal-edit .title-edit-icon {
+  animation: editButtonZoomIn 260ms ease-out both;
+}
+
+@keyframes editButtonZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.72);
+  }
+  72% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .title-edit-cluster {
   white-space: nowrap;
 }
