@@ -39,7 +39,7 @@ export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; on
           value={roomUrl}
           size={340}
           bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
-          fgColor={theme === "dark" ? "#f3f4f6" : "#4f535b"}
+          fgColor={theme === "dark" ? "#ffffff" : "#000000"}
           className="large-qr"
           onClick={handleClose}
         />
@@ -51,4 +51,3 @@ export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; on
     </div>
   );
 }
-
