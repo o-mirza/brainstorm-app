@@ -49,7 +49,7 @@ export default function DeleteRoomModal({ roomTitle, ideaCount, onClose, onConfi
             <X size={18} />
           </button>
         </div>
-        <p className="delete-room-copy">Clear the board? This deletes the room, its ideas, and access for everyone with the link.</p>
+        <p className="delete-room-copy">This deletes the room and all content for everyone with the link. This cannot be undone.</p>
         <div className="delete-room-summary">
           <strong>{roomTitle}</strong>
           <span>{ideaCount} {ideaCount === 1 ? "idea" : "ideas"}</span>
