@@ -1,10 +1,12 @@
 import { X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useState } from "react";
+import { useTheme } from "../hooks/useTheme";
 import CopyLinkButton from "./CopyLinkButton";
 
 export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; onClose: () => void }) {
   const [closing, setClosing] = useState(false);
+  const { theme } = useTheme();
 
   const handleClose = () => {
     if (closing) return;
@@ -36,8 +38,8 @@ export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; on
         <QRCodeSVG
           value={roomUrl}
           size={340}
-          bgColor="#ffffff"
-          fgColor="#4f535b"
+          bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
+          fgColor={theme === "dark" ? "#f3f4f6" : "#4f535b"}
           className="large-qr"
           onClick={handleClose}
         />

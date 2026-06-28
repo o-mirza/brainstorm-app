@@ -1,6 +1,7 @@
 import type { RecentRoom } from "@brainstorm/shared";
-import { Expand, History, Plus } from "lucide-react";
+import { Expand, History, Moon, Plus, Sun } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { useTheme } from "../hooks/useTheme";
 import CopyLinkButton from "./CopyLinkButton";
 
 type Props = {
@@ -12,6 +13,8 @@ type Props = {
 };
 
 export default function Sidebar({ roomUrl, recentRooms, onCreateRoom, onShowRecent, onExpand }: Props) {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <aside className="side">
       <div className="side-head">
@@ -23,7 +26,13 @@ export default function Sidebar({ roomUrl, recentRooms, onCreateRoom, onShowRece
       <div className="side-body">
         <div className="quiet-panel">
           <button className="qr-wrap qr-button" type="button" onClick={onExpand} aria-label="Expand sharing view">
-            <QRCodeSVG value={roomUrl} size={242} bgColor="#ffffff" fgColor="#5d626b" className="qr-real" />
+            <QRCodeSVG
+              value={roomUrl}
+              size={242}
+              bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
+              fgColor={theme === "dark" ? "#f3f4f6" : "#5d626b"}
+              className="qr-real"
+            />
           </button>
           <div className="link-box">
             <span className="link-text">{roomUrl}</span>
@@ -37,8 +46,13 @@ export default function Sidebar({ roomUrl, recentRooms, onCreateRoom, onShowRece
           <button type="button" onClick={onShowRecent}>
             <History size={17} /> Recent rooms <span>{recentRooms.length}</span>
           </button>
+          <button type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}>
+            {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </button>
         </div>
       </div>
     </aside>
   );
 }
+
