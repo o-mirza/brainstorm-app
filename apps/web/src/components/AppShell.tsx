@@ -146,7 +146,7 @@ export default function AppShell(props: Props) {
                 onDelete={props.onDeleteIdea}
               />
             </div>
-            <IdeaComposer onSubmit={props.onCreateIdea} />
+            <IdeaComposer key={props.room.slug} onSubmit={props.onCreateIdea} />
           </div>
         </main>
         <div className="side-backdrop" onClick={() => setShareOpen(false)} />
