@@ -1,4 +1,4 @@
-import { index, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const rooms = pgTable(
   "rooms",
@@ -6,6 +6,14 @@ export const rooms = pgTable(
     id: text("id").primaryKey(),
     slug: text("slug").notNull(),
     title: text("title").notNull(),
+    adminToken: text("admin_token").notNull(),
+    participantManagementEnabled: boolean("participant_management_enabled").notNull().default(true),
+    participantCanAddIdeas: boolean("participant_can_add_ideas").notNull().default(true),
+    participantCanEditIdeas: boolean("participant_can_edit_ideas").notNull().default(true),
+    participantCanDeleteIdeas: boolean("participant_can_delete_ideas").notNull().default(true),
+    participantCanHeartIdeas: boolean("participant_can_heart_ideas").notNull().default(true),
+    participantCanRenameRoom: boolean("participant_can_rename_room").notNull().default(false),
+    participantCanDeleteRoom: boolean("participant_can_delete_room").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
   },

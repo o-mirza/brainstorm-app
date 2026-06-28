@@ -5,10 +5,12 @@ import type {
   GetRoomResponse,
   HeartIdeaResponse,
   Idea,
+  ParticipantPermissions,
   RenameRoomResponse,
   Room,
   RoomSnapshot,
   UnheartIdeaResponse,
+  UpdateRoomPermissionsResponse,
   UpdateIdeaResponse
 } from "@brainstorm/shared";
 
@@ -40,76 +42,109 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
-export async function createRoom(): Promise<Room> {
-  const data = await request<CreateRoomResponse>("/api/rooms", { method: "POST" });
-  return data.room;
+function adminHeaders(adminToken?: string): Record<string, string> {
+  return adminToken ? { "x-room-admin-token": adminToken } : {};
 }
 
-export async function getRoomSnapshot(roomSlug: string, participantId: string): Promise<RoomSnapshot> {
+export async function createRoom(): Promise<CreateRoomResponse> {
+  return request<CreateRoomResponse>("/api/rooms", { method: "POST" });
+}
+
+export async function getRoomSnapshot(roomSlug: string, participantId: string, adminToken?: string): Promise<RoomSnapshot> {
   return request<GetRoomResponse>(`/api/rooms/${roomSlug}`, {
-    headers: { "x-participant-id": participantId }
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) }
   });
 }
 
-export async function renameRoom(roomSlug: string, title: string): Promise<Room> {
+export async function renameRoom(roomSlug: string, title: string, adminToken?: string): Promise<Room> {
   const data = await request<RenameRoomResponse>(`/api/rooms/${roomSlug}`, {
     method: "PATCH",
+    headers: adminHeaders(adminToken),
     body: JSON.stringify({ title })
   });
   return data.room;
 }
 
-export async function deleteRoom(roomSlug: string): Promise<DeleteRoomResponse> {
+export async function deleteRoom(roomSlug: string, adminToken?: string): Promise<DeleteRoomResponse> {
   return request<DeleteRoomResponse>(`/api/rooms/${roomSlug}`, {
-    method: "DELETE"
+    method: "DELETE",
+    headers: adminHeaders(adminToken)
   });
 }
 
-export async function createIdea(roomSlug: string, participantId: string, text: string, clientMutationId?: string): Promise<Idea> {
+export async function updateRoomPermissions(
+  roomSlug: string,
+  participantPermissions: ParticipantPermissions,
+  adminToken?: string
+): Promise<Room> {
+  const data = await request<UpdateRoomPermissionsResponse>(`/api/rooms/${roomSlug}/permissions`, {
+    method: "PATCH",
+    headers: adminHeaders(adminToken),
+    body: JSON.stringify({ participantPermissions })
+  });
+  return data.room;
+}
+
+export async function createIdea(
+  roomSlug: string,
+  participantId: string,
+  text: string,
+  clientMutationId?: string,
+  adminToken?: string
+): Promise<Idea> {
   const data = await request<CreateIdeaResponse>(`/api/rooms/${roomSlug}/ideas`, {
     method: "POST",
-    headers: { "x-participant-id": participantId },
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) },
     body: JSON.stringify({ text, clientMutationId })
   });
   return data.idea;
 }
 
-export async function updateIdea(ideaId: string, participantId: string, text: string, clientMutationId?: string): Promise<Idea> {
+export async function updateIdea(
+  ideaId: string,
+  participantId: string,
+  text: string,
+  clientMutationId?: string,
+  adminToken?: string
+): Promise<Idea> {
   const data = await request<UpdateIdeaResponse>(`/api/ideas/${ideaId}`, {
     method: "PATCH",
-    headers: { "x-participant-id": participantId },
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) },
     body: JSON.stringify({ text, clientMutationId })
   });
   return data.idea;
 }
 
-export async function deleteIdea(ideaId: string, participantId: string, clientMutationId?: string): Promise<void> {
+export async function deleteIdea(ideaId: string, participantId: string, clientMutationId?: string, adminToken?: string): Promise<void> {
   await request(`/api/ideas/${ideaId}`, {
     method: "DELETE",
     headers: {
       "x-participant-id": participantId,
-      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {})
+      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {}),
+      ...adminHeaders(adminToken)
     }
   });
 }
 
-export async function heartIdea(ideaId: string, participantId: string, clientMutationId?: string): Promise<Idea> {
+export async function heartIdea(ideaId: string, participantId: string, clientMutationId?: string, adminToken?: string): Promise<Idea> {
   const data = await request<HeartIdeaResponse>(`/api/ideas/${ideaId}/heart`, {
     method: "PUT",
     headers: {
       "x-participant-id": participantId,
-      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {})
+      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {}),
+      ...adminHeaders(adminToken)
     }
   });
   return data.idea;
 }
 
-export async function unheartIdea(ideaId: string, participantId: string, clientMutationId?: string): Promise<Idea> {
+export async function unheartIdea(ideaId: string, participantId: string, clientMutationId?: string, adminToken?: string): Promise<Idea> {
   const data = await request<UnheartIdeaResponse>(`/api/ideas/${ideaId}/heart`, {
     method: "DELETE",
     headers: {
       "x-participant-id": participantId,
-      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {})
+      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {}),
+      ...adminHeaders(adminToken)
     }
   });
   return data.idea;

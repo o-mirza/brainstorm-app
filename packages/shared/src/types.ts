@@ -1,7 +1,28 @@
+export type ParticipantPermissions = {
+  canAddIdeas: boolean;
+  canEditIdeas: boolean;
+  canDeleteIdeas: boolean;
+  canHeartIdeas: boolean;
+  canRenameRoom: boolean;
+  canDeleteRoom: boolean;
+};
+
+export function defaultParticipantPermissions(): ParticipantPermissions {
+  return {
+    canAddIdeas: true,
+    canEditIdeas: true,
+    canDeleteIdeas: true,
+    canHeartIdeas: true,
+    canRenameRoom: false,
+    canDeleteRoom: false
+  };
+}
+
 export type Room = {
   id: string;
   slug: string;
   title: string;
+  participantPermissions: ParticipantPermissions;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,6 +56,7 @@ export type RoomSnapshot = {
   room: Room;
   ideas: Idea[];
   participantCount: number;
+  isAdmin: boolean;
 };
 
 export type RecentRoom = {

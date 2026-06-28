@@ -5,6 +5,7 @@ import { ROOM_TITLE_MAX_LENGTH, type Room } from "@brainstorm/shared";
 type Props = {
   room: Room;
   animateGeneratedTitle: boolean;
+  canRename: boolean;
   onRename: (title: string) => Promise<void>;
 };
 
@@ -16,7 +17,7 @@ function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-export default function RoomTitleEditor({ room, animateGeneratedTitle, onRename }: Props) {
+export default function RoomTitleEditor({ room, animateGeneratedTitle, canRename, onRename }: Props) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(room.title);
   const [displayTitle, setDisplayTitle] = useState(animateGeneratedTitle ? "" : room.title);
@@ -77,6 +78,10 @@ export default function RoomTitleEditor({ room, animateGeneratedTitle, onRename 
     if (editing) inputRef.current?.focus();
   }, [editing]);
 
+  useEffect(() => {
+    if (!canRename) setEditing(false);
+  }, [canRename]);
+
   async function commit() {
     const next = value.trim();
     setEditing(false);
@@ -89,28 +94,45 @@ export default function RoomTitleEditor({ room, animateGeneratedTitle, onRename 
 
   return (
     <div className={`room-title ${editing ? "editing" : ""} ${generating ? "generating" : ""} ${revealEdit ? "reveal-edit" : ""}`}>
-      <button className="room-title-button" type="button" onClick={() => setEditing(true)} aria-label="Rename room">
-        {displayTitle || room.title}{" "}
-        <span className="title-edit-cluster">
-          <Pencil className="title-edit-icon" aria-hidden="true" />
+      {canRename ? (
+        <button
+          key={room.title}
+          className="room-title-button"
+          type="button"
+          onClick={() => setEditing(true)}
+          aria-label="Rename room"
+        >
+          {displayTitle || room.title}{" "}
+          <span className="title-edit-cluster">
+            <Pencil className="title-edit-icon" aria-hidden="true" />
+          </span>
+        </button>
+      ) : (
+        <span
+          key={room.title}
+          className="room-title-button static"
+        >
+          {displayTitle || room.title}
         </span>
-      </button>
-      <input
-        ref={inputRef}
-        className="room-title-input"
-        value={value}
-        maxLength={ROOM_TITLE_MAX_LENGTH}
-        aria-label="Room title"
-        onChange={(event) => setValue(event.target.value)}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") void commit();
-          if (event.key === "Escape") {
-            setValue(room.title);
-            setEditing(false);
-          }
-        }}
-      />
+      )}
+      {canRename ? (
+        <input
+          ref={inputRef}
+          className="room-title-input"
+          value={value}
+          maxLength={ROOM_TITLE_MAX_LENGTH}
+          aria-label="Room title"
+          onChange={(event) => setValue(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") void commit();
+            if (event.key === "Escape") {
+              setValue(room.title);
+              setEditing(false);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

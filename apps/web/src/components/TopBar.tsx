@@ -9,15 +9,16 @@ type Props = {
   participantCount: number;
   status: Status;
   animateGeneratedTitle: boolean;
+  canManageRoom: boolean;
   onRename: (title: string) => Promise<void>;
   sidebarOpen: boolean;
   onToggleSidebar: () => void;
 };
 
-export default function TopBar({ room, participantCount, status, animateGeneratedTitle, onRename, sidebarOpen, onToggleSidebar }: Props) {
+export default function TopBar({ room, participantCount, status, animateGeneratedTitle, canManageRoom, onRename, sidebarOpen, onToggleSidebar }: Props) {
   return (
     <header className="topbar">
-      <RoomTitleEditor room={room} animateGeneratedTitle={animateGeneratedTitle} onRename={onRename} />
+      <RoomTitleEditor room={room} animateGeneratedTitle={animateGeneratedTitle} canRename={canManageRoom} onRename={onRename} />
       <div className="top-actions">
         <ConnectionStatus status={status} count={participantCount} />
         <button

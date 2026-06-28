@@ -1,0 +1,1 @@
+ALTER TABLE "rooms" ALTER COLUMN "participant_can_rename_room" SET DEFAULT false;

@@ -8,6 +8,10 @@ type Props = {
   onToggleHeart: (idea: Idea) => Promise<void>;
   onUpdate: (ideaId: string, text: string) => Promise<void>;
   onDelete: (ideaId: string) => Promise<void>;
+  canAdd: boolean;
+  canHeart: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
 };
 
 export default function IdeaList(props: Props) {
@@ -69,7 +73,7 @@ export default function IdeaList(props: Props) {
       <div className="empty">
         <div>
           <strong>No ideas yet</strong>
-          <span>Add the first one.</span>
+          <span>{props.canAdd ? "Add the first one." : "Waiting for ideas."}</span>
         </div>
       </div>
     );
@@ -91,6 +95,9 @@ export default function IdeaList(props: Props) {
           onToggleHeart={props.onToggleHeart}
           onUpdate={props.onUpdate}
           onDelete={props.onDelete}
+          canHeart={props.canHeart}
+          canEdit={props.canEdit}
+          canDelete={props.canDelete}
         />
       ))}
     </div>

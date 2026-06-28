@@ -12,6 +12,13 @@ type Props = {
   room: Room;
   ideas: ClientIdea[];
   roomUrl: string;
+  isAdmin: boolean;
+  canAddIdeas: boolean;
+  canEditIdeas: boolean;
+  canDeleteIdeas: boolean;
+  canHeartIdeas: boolean;
+  canRenameRoom: boolean;
+  canDeleteRoom: boolean;
   participantCount: number;
   status: Status;
   recentRooms: RecentRoom[];
@@ -20,6 +27,7 @@ type Props = {
   onCreateRoom: () => void;
   onShowRecent: () => void;
   onExpandShare: () => void;
+  onShowPermissions: () => void;
   onDeleteRoom: () => void;
   onCreateIdea: (text: string) => Promise<void>;
   onToggleHeart: (idea: Idea) => Promise<void>;
@@ -53,10 +61,13 @@ export default function AppShell(props: Props) {
     return (
       <Sidebar
         roomUrl={props.roomUrl}
+        isAdmin={props.isAdmin}
+        canDeleteRoom={props.canDeleteRoom}
         recentRooms={props.recentRooms}
         onCreateRoom={() => handleSidebarAction(props.onCreateRoom)}
         onShowRecent={() => handleSidebarAction(props.onShowRecent)}
         onExpand={() => handleSidebarAction(props.onExpandShare)}
+        onShowPermissions={() => handleSidebarAction(props.onShowPermissions)}
         onDeleteRoom={() => handleSidebarAction(props.onDeleteRoom)}
       />
     );
@@ -104,6 +115,7 @@ export default function AppShell(props: Props) {
         participantCount={props.participantCount}
         status={props.status}
         animateGeneratedTitle={props.animateGeneratedTitle}
+        canManageRoom={props.canRenameRoom}
         onRename={props.onRename}
         sidebarOpen={shareOpen}
         onToggleSidebar={toggleSidebar}
@@ -146,9 +158,13 @@ export default function AppShell(props: Props) {
                 onToggleHeart={props.onToggleHeart}
                 onUpdate={props.onUpdateIdea}
                 onDelete={props.onDeleteIdea}
+                canAdd={props.canAddIdeas}
+                canHeart={props.canHeartIdeas}
+                canEdit={props.canEditIdeas}
+                canDelete={props.canDeleteIdeas}
               />
             </div>
-            <IdeaComposer key={props.room.slug} onSubmit={props.onCreateIdea} />
+            {props.canAddIdeas ? <IdeaComposer key={props.room.slug} onSubmit={props.onCreateIdea} /> : null}
           </div>
         </main>
         <div className="side-backdrop" onClick={() => setShareOpen(false)} />

@@ -2,6 +2,7 @@ import { customAlphabet, nanoid } from "nanoid";
 import { IDEA_ID_PREFIX, PARTICIPANT_ID_PREFIX, ROOM_ID_PREFIX } from "@brainstorm/shared";
 
 const roomSlugAlphabet = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 6);
+const roomAdminTokenAlphabet = customAlphabet("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", 32);
 
 export function createRoomId(): string {
   return `${ROOM_ID_PREFIX}${nanoid(12)}`;
@@ -13,6 +14,10 @@ export function createIdeaId(): string {
 
 export function createRoomSlug(): string {
   return roomSlugAlphabet();
+}
+
+export function createRoomAdminToken(): string {
+  return roomAdminTokenAlphabet();
 }
 
 export function isParticipantId(value: string): boolean {

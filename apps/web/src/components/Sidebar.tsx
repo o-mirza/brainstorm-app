@@ -1,19 +1,32 @@
 import type { RecentRoom } from "@brainstorm/shared";
-import { Expand, History, Moon, Plus, Sun, Trash2 } from "lucide-react";
+import { Expand, History, Moon, Plus, ShieldCheck, Sun, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "../hooks/useTheme";
 import CopyLinkButton from "./CopyLinkButton";
 
 type Props = {
   roomUrl: string;
+  isAdmin: boolean;
+  canDeleteRoom: boolean;
   recentRooms: RecentRoom[];
   onCreateRoom: () => void;
   onShowRecent: () => void;
   onExpand: () => void;
+  onShowPermissions: () => void;
   onDeleteRoom: () => void;
 };
 
-export default function Sidebar({ roomUrl, recentRooms, onCreateRoom, onShowRecent, onExpand, onDeleteRoom }: Props) {
+export default function Sidebar({
+  roomUrl,
+  isAdmin,
+  canDeleteRoom,
+  recentRooms,
+  onCreateRoom,
+  onShowRecent,
+  onExpand,
+  onShowPermissions,
+  onDeleteRoom
+}: Props) {
   const { theme, toggleTheme } = useTheme();
 
   return (
@@ -52,11 +65,18 @@ export default function Sidebar({ roomUrl, recentRooms, onCreateRoom, onShowRece
             {theme === "light" ? "Dark mode" : "Light mode"}
           </button>
         </div>
-        <div className="room-actions room-actions-danger">
-          <button type="button" className="destructive-action" onClick={onDeleteRoom}>
-            <Trash2 size={17} /> Delete room
-          </button>
-        </div>
+        {isAdmin || canDeleteRoom ? (
+          <div className="room-actions room-actions-danger">
+            {isAdmin ? (
+              <button type="button" onClick={onShowPermissions}>
+                <ShieldCheck size={17} /> Permissions
+              </button>
+            ) : null}
+            <button type="button" className="destructive-action" onClick={onDeleteRoom}>
+              <Trash2 size={17} /> Delete room
+            </button>
+          </div>
+        ) : null}
       </div>
     </aside>
   );

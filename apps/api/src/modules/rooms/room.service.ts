@@ -1,8 +1,9 @@
-import type { Idea, Room, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
+import type { Idea, ParticipantPermissions, Room, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
+import { defaultParticipantPermissions } from "@brainstorm/shared";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db/client.js";
 import { ideas, rooms } from "../../db/schema.js";
-import { createRoomId } from "../../shared/ids.js";
+import { createRoomAdminToken, createRoomId } from "../../shared/ids.js";
 import { makeError, toIso } from "../../shared/http.js";
 import { createRoomTitle } from "./room.name.js";
 import { generateRoomSlug } from "./room.slug.js";
@@ -24,6 +25,14 @@ function mapRoom(row: RoomRow): Room {
     id: row.id,
     slug: row.slug,
     title: row.title,
+    participantPermissions: {
+      canAddIdeas: row.participantCanAddIdeas,
+      canEditIdeas: row.participantCanEditIdeas,
+      canDeleteIdeas: row.participantCanDeleteIdeas,
+      canHeartIdeas: row.participantCanHeartIdeas,
+      canRenameRoom: row.participantCanRenameRoom,
+      canDeleteRoom: row.participantCanDeleteRoom
+    },
     createdAt: toIso(row.createdAt),
     updatedAt: toIso(row.updatedAt)
   };
@@ -46,14 +55,24 @@ export function toSharedIdea(idea: Idea): SharedIdea {
   return shared;
 }
 
-export async function createRoom(): Promise<Room> {
+export async function createRoom(): Promise<{ room: Room; adminToken: string }> {
   for (let attempt = 0; attempt < 10; attempt += 1) {
+    const adminToken = createRoomAdminToken();
+    const participantPermissions = defaultParticipantPermissions();
     const [room] = await db
       .insert(rooms)
       .values({
         id: createRoomId(),
         slug: generateRoomSlug(),
         title: createRoomTitle(),
+        adminToken,
+        participantManagementEnabled: true,
+        participantCanAddIdeas: participantPermissions.canAddIdeas,
+        participantCanEditIdeas: participantPermissions.canEditIdeas,
+        participantCanDeleteIdeas: participantPermissions.canDeleteIdeas,
+        participantCanHeartIdeas: participantPermissions.canHeartIdeas,
+        participantCanRenameRoom: participantPermissions.canRenameRoom,
+        participantCanDeleteRoom: participantPermissions.canDeleteRoom,
         createdAt: new Date(),
         updatedAt: new Date()
       })
@@ -61,7 +80,7 @@ export async function createRoom(): Promise<Room> {
       .returning();
 
     if (room) {
-      return mapRoom(room);
+      return { room: mapRoom(room), adminToken };
     }
   }
 
@@ -114,7 +133,8 @@ export async function getIdeaProjection(ideaId: string, participantId: string): 
 export async function getRoomSnapshot(
   roomSlug: string,
   participantId: string,
-  participantCount: number
+  participantCount: number,
+  adminToken?: string
 ): Promise<RoomSnapshot> {
   const roomRow = await getRoomRowBySlug(roomSlug);
   const ideaRows = await db.execute<IdeaProjectionRow>(sql`
@@ -139,15 +159,46 @@ export async function getRoomSnapshot(
   return {
     room: mapRoom(roomRow),
     ideas: ideaRows.map(mapIdea),
-    participantCount
+    participantCount,
+    isAdmin: isRoomAdmin(roomRow, adminToken)
   };
 }
 
-export async function renameRoom(roomSlug: string, title: string): Promise<Room> {
+export function isRoomAdmin(room: RoomRow, adminToken: string | undefined): boolean {
+  return Boolean(adminToken && adminToken === room.adminToken);
+}
+
+export function assertParticipantPermission(
+  room: RoomRow,
+  adminToken: string | undefined,
+  permission: keyof ParticipantPermissions
+): void {
+  if (isRoomAdmin(room, adminToken)) {
+    return;
+  }
+
+  const allowed = {
+    canAddIdeas: room.participantCanAddIdeas,
+    canEditIdeas: room.participantCanEditIdeas,
+    canDeleteIdeas: room.participantCanDeleteIdeas,
+    canHeartIdeas: room.participantCanHeartIdeas,
+    canRenameRoom: room.participantCanRenameRoom,
+    canDeleteRoom: room.participantCanDeleteRoom
+  }[permission];
+
+  if (!allowed) {
+    throw makeError("admin_required", "Admin access is required for this action.", 403);
+  }
+}
+
+export async function renameRoom(roomSlug: string, title: string, adminToken?: string): Promise<Room> {
+  const roomRow = await getRoomRowBySlug(roomSlug);
+  assertParticipantPermission(roomRow, adminToken, "canRenameRoom");
+
   const [room] = await db
     .update(rooms)
     .set({ title, updatedAt: new Date() })
-    .where(eq(rooms.slug, roomSlug))
+    .where(eq(rooms.id, roomRow.id))
     .returning();
 
   if (!room) {
@@ -156,12 +207,45 @@ export async function renameRoom(roomSlug: string, title: string): Promise<Room>
   return mapRoom(room);
 }
 
-export async function deleteRoom(roomSlug: string): Promise<void> {
-  const [room] = await db.delete(rooms).where(eq(rooms.slug, roomSlug)).returning({ slug: rooms.slug });
+export async function deleteRoom(roomSlug: string, adminToken?: string): Promise<void> {
+  const roomRow = await getRoomRowBySlug(roomSlug);
+  assertParticipantPermission(roomRow, adminToken, "canDeleteRoom");
+
+  const [room] = await db.delete(rooms).where(eq(rooms.id, roomRow.id)).returning({ slug: rooms.slug });
 
   if (!room) {
     throw makeError("room_not_found", "Room does not exist.", 404);
   }
+}
+
+export async function updateRoomPermissions(
+  roomSlug: string,
+  participantPermissions: ParticipantPermissions,
+  adminToken?: string
+): Promise<Room> {
+  const roomRow = await getRoomRowBySlug(roomSlug);
+  if (!isRoomAdmin(roomRow, adminToken)) {
+    throw makeError("admin_required", "Admin access is required to update room permissions.", 403);
+  }
+
+  const [room] = await db
+    .update(rooms)
+    .set({
+      participantCanAddIdeas: participantPermissions.canAddIdeas,
+      participantCanEditIdeas: participantPermissions.canEditIdeas,
+      participantCanDeleteIdeas: participantPermissions.canDeleteIdeas,
+      participantCanHeartIdeas: participantPermissions.canHeartIdeas,
+      participantCanRenameRoom: participantPermissions.canRenameRoom,
+      participantCanDeleteRoom: participantPermissions.canDeleteRoom,
+      updatedAt: new Date()
+    })
+    .where(eq(rooms.id, roomRow.id))
+    .returning();
+
+  if (!room) {
+    throw makeError("room_not_found", "Room does not exist.", 404);
+  }
+  return mapRoom(room);
 }
 
 export async function touchRoom(roomId: string): Promise<void> {

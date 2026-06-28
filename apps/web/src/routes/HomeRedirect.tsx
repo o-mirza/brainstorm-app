@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createRoom } from "../lib/api";
 import { useRecentRooms } from "../hooks/useRecentRooms";
+import { storeRoomAdminToken } from "../lib/adminAccess";
 
 export default function HomeRedirect() {
   const navigate = useNavigate();
@@ -14,7 +15,8 @@ export default function HomeRedirect() {
     startedRef.current = true;
     void (async () => {
       try {
-        const room = await createRoom();
+        const { room, adminToken } = await createRoom();
+        storeRoomAdminToken(room.slug, adminToken);
         rememberRoom(room, 0);
         navigate(`/r/${room.slug}`, { replace: true, state: { createdRoom: true } });
       } catch (createError) {

@@ -8,6 +8,27 @@
       "when": 1782470400000,
       "tag": "0000_initial",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1782556800000,
+      "tag": "0001_room_admin_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782643200000,
+      "tag": "0002_participant_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782632484289,
+      "tag": "0003_odd_pretty_boy",
+      "breakpoints": true
     }
   ]
 }

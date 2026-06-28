@@ -3,15 +3,17 @@ import type {
   DeleteRoomResponse,
   GetRoomResponse,
   RenameRoomRequest,
-  RenameRoomResponse
+  RenameRoomResponse,
+  UpdateRoomPermissionsRequest,
+  UpdateRoomPermissionsResponse
 } from "@brainstorm/shared";
 import type { FastifyInstance } from "fastify";
 import { ZodError } from "zod";
 import { makeError } from "../../shared/http.js";
 import { parseParticipantHeader, roomSlugSchema } from "../../shared/validation.js";
 import type { RealtimeGateway } from "../realtime/realtime.gateway.js";
-import { createRoom, deleteRoom, getRoomSnapshot, renameRoom } from "./room.service.js";
-import { renameRoomRequestSchema } from "./room.schemas.js";
+import { createRoom, deleteRoom, getRoomSnapshot, renameRoom, updateRoomPermissions } from "./room.service.js";
+import { renameRoomRequestSchema, updateRoomPermissionsRequestSchema } from "./room.schemas.js";
 
 function asBadRequest(error: unknown): Error {
   if (error instanceof ZodError) {
@@ -20,16 +22,21 @@ function asBadRequest(error: unknown): Error {
   return error as Error;
 }
 
+function parseAdminToken(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 export async function registerRoomRoutes(app: FastifyInstance, realtime: RealtimeGateway) {
   app.post("/api/rooms", async (): Promise<CreateRoomResponse> => {
-    return { room: await createRoom() };
+    return createRoom();
   });
 
   app.get<{ Params: { roomSlug: string } }>("/api/rooms/:roomSlug", async (request): Promise<GetRoomResponse> => {
     try {
       const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
       const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
-      return getRoomSnapshot(roomSlug, participantId, realtime.getParticipantCount(roomSlug));
+      const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+      return getRoomSnapshot(roomSlug, participantId, realtime.getParticipantCount(roomSlug), adminToken);
     } catch (error) {
       throw asBadRequest(error);
     }
@@ -41,7 +48,8 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
       try {
         const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
         const { title } = renameRoomRequestSchema.parse(request.body);
-        const room = await renameRoom(roomSlug, title);
+        const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+        const room = await renameRoom(roomSlug, title, adminToken);
         realtime.broadcastRoom(roomSlug, { type: "room.updated", room });
         return { room };
       } catch (error) {
@@ -53,11 +61,28 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
   app.delete<{ Params: { roomSlug: string } }>("/api/rooms/:roomSlug", async (request): Promise<DeleteRoomResponse> => {
     try {
       const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
-      await deleteRoom(roomSlug);
+      const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+      await deleteRoom(roomSlug, adminToken);
       realtime.broadcastRoomDeleted(roomSlug);
       return { ok: true, roomSlug };
     } catch (error) {
       throw asBadRequest(error);
     }
   });
+
+  app.patch<{ Params: { roomSlug: string }; Body: UpdateRoomPermissionsRequest }>(
+    "/api/rooms/:roomSlug/permissions",
+    async (request): Promise<UpdateRoomPermissionsResponse> => {
+      try {
+        const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
+        const { participantPermissions } = updateRoomPermissionsRequestSchema.parse(request.body);
+        const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+        const room = await updateRoomPermissions(roomSlug, participantPermissions, adminToken);
+        realtime.broadcastRoom(roomSlug, { type: "room.updated", room });
+        return { room };
+      } catch (error) {
+        throw asBadRequest(error);
+      }
+    }
+  );
 }

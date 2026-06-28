@@ -1,7 +1,8 @@
-import type { Idea, IdeaDeleted, Room, RoomSnapshot, SharedIdea, SharedIdeaUpdate } from "./types.js";
+import type { Idea, IdeaDeleted, ParticipantPermissions, Room, RoomSnapshot, SharedIdea, SharedIdeaUpdate } from "./types.js";
 
 export type CreateRoomResponse = {
   room: Room;
+  adminToken: string;
 };
 
 export type GetRoomResponse = RoomSnapshot;
@@ -13,6 +14,14 @@ export type RenameRoomRequest = {
 export type RenameRoomResponse = {
   room: Room;
   clientMutationId?: string;
+};
+
+export type UpdateRoomPermissionsRequest = {
+  participantPermissions: ParticipantPermissions;
+};
+
+export type UpdateRoomPermissionsResponse = {
+  room: Room;
 };
 
 export type DeleteRoomResponse = {

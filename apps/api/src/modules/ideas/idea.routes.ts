@@ -27,6 +27,10 @@ function parseClientMutationId(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 && value.length <= 120 ? value : undefined;
 }
 
+function parseAdminToken(value: unknown): string | undefined {
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
 function withClientMutationId<T extends object>(value: T, clientMutationId: string | undefined): T & { clientMutationId?: string } {
   return clientMutationId ? { ...value, clientMutationId } : value;
 }
@@ -38,8 +42,9 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
       try {
         const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
         const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+        const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
         const { text, clientMutationId } = ideaTextRequestSchema.parse(request.body);
-        const idea = await createIdea(roomSlug, participantId, text);
+        const idea = await createIdea(roomSlug, participantId, text, adminToken);
         realtime.broadcastRoom(roomSlug, withClientMutationId({ type: "idea.created", idea: toSharedIdea(idea) }, clientMutationId));
         return withClientMutationId({ idea }, clientMutationId);
       } catch (error) {
@@ -54,8 +59,9 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
       try {
         const ideaId = ideaIdSchema.parse(request.params.ideaId);
         const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+        const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
         const { text, clientMutationId } = ideaTextRequestSchema.parse(request.body);
-        const { idea, roomSlug } = await updateIdea(ideaId, participantId, text);
+        const { idea, roomSlug } = await updateIdea(ideaId, participantId, text, adminToken);
         realtime.broadcastRoom(
           roomSlug,
           withClientMutationId(
@@ -83,8 +89,9 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
     try {
       const ideaId = ideaIdSchema.parse(request.params.ideaId);
       parseParticipantHeader(request.headers["x-participant-id"]);
+      const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
       const clientMutationId = parseClientMutationId(request.headers["x-client-mutation-id"]);
-      const deleted = await deleteIdea(ideaId);
+      const deleted = await deleteIdea(ideaId, adminToken);
       realtime.broadcastRoom(
         deleted.roomSlug,
         withClientMutationId({ type: "idea.deleted", idea: { id: deleted.ideaId, roomId: deleted.roomId } }, clientMutationId)
@@ -99,8 +106,9 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
     try {
       const ideaId = ideaIdSchema.parse(request.params.ideaId);
       const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+      const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
       const clientMutationId = parseClientMutationId(request.headers["x-client-mutation-id"]);
-      const { idea, roomSlug } = await heartIdea(ideaId, participantId);
+      const { idea, roomSlug } = await heartIdea(ideaId, participantId, adminToken);
       realtime.broadcastRoom(
         roomSlug,
         withClientMutationId(
@@ -120,8 +128,9 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
       try {
         const ideaId = ideaIdSchema.parse(request.params.ideaId);
         const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+        const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
         const clientMutationId = parseClientMutationId(request.headers["x-client-mutation-id"]);
-        const { idea, roomSlug } = await unheartIdea(ideaId, participantId);
+        const { idea, roomSlug } = await unheartIdea(ideaId, participantId, adminToken);
         realtime.broadcastRoom(
           roomSlug,
           withClientMutationId(

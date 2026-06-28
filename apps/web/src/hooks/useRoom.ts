@@ -1,4 +1,4 @@
-import type { Idea, Room, RoomSnapshot, ServerWsEvent } from "@brainstorm/shared";
+import type { Idea, ParticipantPermissions, Room, RoomSnapshot, ServerWsEvent } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "../lib/api";
 import { createClientMutationId } from "../lib/ids";
@@ -33,10 +33,11 @@ function makeOptimisticIdea(
   };
 }
 
-export function useRoom(roomSlug: string, participantId: string) {
+export function useRoom(roomSlug: string, participantId: string, adminToken?: string) {
   const [room, setRoom] = useState<Room | null>(null);
   const [ideas, setIdeas] = useState<ClientIdea[]>([]);
   const [participantCount, setParticipantCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>("loading");
   const [error, setError] = useState<string | null>(null);
   const appliedMutationIdsRef = useRef(new Set<string>());
@@ -44,17 +45,20 @@ export function useRoom(roomSlug: string, participantId: string) {
   const canceledCreateMutationIdsRef = useRef(new Set<string>());
   const createHeartIntentsRef = useRef(new Map<string, boolean>());
   const deletedRef = useRef(false);
+  const lastFetchIdRef = useRef(0);
 
   useEffect(() => {
     deletedRef.current = false;
     setRoom(null);
     setIdeas([]);
     setParticipantCount(0);
+    setIsAdmin(false);
     setLoadState("loading");
     setError(null);
+    lastFetchIdRef.current = 0;
   }, [roomSlug]);
 
-  const applySnapshot = useCallback((snapshot: RoomSnapshot) => {
+  const applySnapshot = useCallback((snapshot: RoomSnapshot, preserveAdmin = false) => {
     deletedRef.current = false;
     setRoom(snapshot.room);
     setIdeas((current) => {
@@ -62,6 +66,7 @@ export function useRoom(roomSlug: string, participantId: string) {
       return sortIdeas(snapshot.ideas.map((idea) => withRenderKey(idea, renderKeys.get(idea.id))));
     });
     setParticipantCount(snapshot.participantCount);
+    setIsAdmin((current) => (preserveAdmin ? current || snapshot.isAdmin : snapshot.isAdmin));
     setLoadState("ready");
     setError(null);
   }, []);
@@ -71,21 +76,28 @@ export function useRoom(roomSlug: string, participantId: string) {
     setRoom(null);
     setIdeas([]);
     setParticipantCount(0);
+    setIsAdmin(false);
     setLoadState("deleted");
     setError(null);
   }, []);
 
   const fetchSnapshot = useCallback(async () => {
     if (deletedRef.current) return;
+    const fetchId = ++lastFetchIdRef.current;
     setLoadState((current) => (current === "ready" ? current : "loading"));
     try {
-      applySnapshot(await api.getRoomSnapshot(roomSlug, participantId));
+      const result = await api.getRoomSnapshot(roomSlug, participantId, adminToken);
+      if (fetchId === lastFetchIdRef.current) {
+        applySnapshot(result);
+      }
     } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : "Room could not be loaded.";
-      setError(message);
-      setLoadState(message.toLowerCase().includes("does not exist") ? "not-found" : "error");
+      if (fetchId === lastFetchIdRef.current) {
+        const message = fetchError instanceof Error ? fetchError.message : "Room could not be loaded.";
+        setError(message);
+        setLoadState(message.toLowerCase().includes("does not exist") ? "not-found" : "error");
+      }
     }
-  }, [applySnapshot, participantId, roomSlug]);
+  }, [adminToken, applySnapshot, participantId, roomSlug]);
 
   useEffect(() => {
     void fetchSnapshot();
@@ -94,7 +106,7 @@ export function useRoom(roomSlug: string, participantId: string) {
   const applyServerEvent = useCallback(
     (event: ServerWsEvent) => {
       if (event.type === "room.snapshot") {
-        applySnapshot(event.snapshot);
+        applySnapshot(event.snapshot, true);
         return;
       }
 
@@ -122,7 +134,7 @@ export function useRoom(roomSlug: string, participantId: string) {
             if (canceledCreateMutationIdsRef.current.has(event.clientMutationId)) {
               appliedMutationIdsRef.current.add(event.clientMutationId);
               const deleteMutationId = createClientMutationId();
-              void api.deleteIdea(event.idea.id, participantId, deleteMutationId).catch(() => {
+              void api.deleteIdea(event.idea.id, participantId, deleteMutationId, adminToken).catch(() => {
                 void fetchSnapshot();
               });
               return current;
@@ -198,7 +210,7 @@ export function useRoom(roomSlug: string, participantId: string) {
           setRoom({ ...previousRoom, title, updatedAt: new Date().toISOString() });
         }
         try {
-          const nextRoom = await api.renameRoom(roomSlug, title);
+          const nextRoom = await api.renameRoom(roomSlug, title, adminToken);
           setRoom(nextRoom);
           return nextRoom;
         } catch (renameError) {
@@ -207,8 +219,22 @@ export function useRoom(roomSlug: string, participantId: string) {
         }
       },
       deleteRoom: async () => {
-        await api.deleteRoom(roomSlug);
+        await api.deleteRoom(roomSlug, adminToken);
         applyDeleted();
+      },
+      updatePermissions: async (participantPermissions: ParticipantPermissions) => {
+        const previousRoom = room;
+        if (previousRoom) {
+          setRoom({ ...previousRoom, participantPermissions, updatedAt: new Date().toISOString() });
+        }
+        try {
+          const nextRoom = await api.updateRoomPermissions(roomSlug, participantPermissions, adminToken);
+          setRoom(nextRoom);
+          return nextRoom;
+        } catch (permissionsError) {
+          if (previousRoom) setRoom(previousRoom);
+          throw permissionsError;
+        }
       },
       createIdea: async (text: string) => {
         const clientMutationId = createClientMutationId();
@@ -225,11 +251,11 @@ export function useRoom(roomSlug: string, participantId: string) {
           setIdeas((current) => sortIdeas([optimisticIdea, ...current]));
         }
         try {
-          const idea = await api.createIdea(roomSlug, participantId, text, clientMutationId);
+          const idea = await api.createIdea(roomSlug, participantId, text, clientMutationId, adminToken);
           if (canceledCreateMutationIdsRef.current.has(clientMutationId)) {
             const deleteMutationId = createClientMutationId();
             appliedMutationIdsRef.current.add(clientMutationId);
-            void api.deleteIdea(idea.id, participantId, deleteMutationId).catch(() => {
+            void api.deleteIdea(idea.id, participantId, deleteMutationId, adminToken).catch(() => {
               void fetchSnapshot();
             });
             return idea;
@@ -246,7 +272,7 @@ export function useRoom(roomSlug: string, participantId: string) {
           }
           if (desiredHeartedByMe === false) {
             const unheartMutationId = createClientMutationId();
-            void api.unheartIdea(idea.id, participantId, unheartMutationId)
+            void api.unheartIdea(idea.id, participantId, unheartMutationId, adminToken)
               .then((nextIdea) => replaceIdea(nextIdea, unheartMutationId))
               .catch(() => {
                 void fetchSnapshot();
@@ -267,7 +293,7 @@ export function useRoom(roomSlug: string, participantId: string) {
           replaceIdea({ ...previousIdea, text, updatedAt: new Date().toISOString() });
         }
         try {
-          const idea = await api.updateIdea(ideaId, participantId, text, clientMutationId);
+          const idea = await api.updateIdea(ideaId, participantId, text, clientMutationId, adminToken);
           replaceIdea(idea, clientMutationId);
           return idea;
         } catch (updateError) {
@@ -288,7 +314,7 @@ export function useRoom(roomSlug: string, participantId: string) {
         const previousIdeas = ideas;
         setIdeas((current) => current.filter((idea) => idea.id !== ideaId));
         try {
-          await api.deleteIdea(ideaId, participantId, clientMutationId);
+          await api.deleteIdea(ideaId, participantId, clientMutationId, adminToken);
           appliedMutationIdsRef.current.add(clientMutationId);
         } catch (deleteError) {
           setIdeas(previousIdeas);
@@ -316,8 +342,8 @@ export function useRoom(roomSlug: string, participantId: string) {
         replaceIdea(optimisticIdea);
         try {
           const nextIdea = idea.heartedByMe
-            ? await api.unheartIdea(idea.id, participantId, clientMutationId)
-            : await api.heartIdea(idea.id, participantId, clientMutationId);
+            ? await api.unheartIdea(idea.id, participantId, clientMutationId, adminToken)
+            : await api.heartIdea(idea.id, participantId, clientMutationId, adminToken);
           if (heartVersionsRef.current.get(idea.id) === nextVersion) {
             replaceIdea(nextIdea, clientMutationId);
           } else {
@@ -332,13 +358,14 @@ export function useRoom(roomSlug: string, participantId: string) {
         }
       }
     }),
-    [applyDeleted, fetchSnapshot, ideas, participantId, replaceIdea, replaceOptimisticIdea, room, roomSlug]
+    [adminToken, applyDeleted, fetchSnapshot, ideas, participantId, replaceIdea, replaceOptimisticIdea, room, roomSlug]
   );
 
   return {
     room,
     ideas,
     participantCount,
+    isAdmin,
     loadState,
     error,
     actions,

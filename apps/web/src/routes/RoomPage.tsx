@@ -1,6 +1,7 @@
-import type { Idea } from "@brainstorm/shared";
+import type { Idea, ParticipantPermissions } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import AdminPermissionsModal from "../components/AdminPermissionsModal";
 import AppShell from "../components/AppShell";
 import DeleteRoomModal from "../components/DeleteRoomModal";
 import RecentRoomsDialog from "../components/RecentRoomsDialog";
@@ -9,8 +10,9 @@ import { useParticipantId } from "../hooks/useParticipantId";
 import { useRecentRooms } from "../hooks/useRecentRooms";
 import { useRoom } from "../hooks/useRoom";
 import { useRoomRealtime } from "../hooks/useRoomRealtime";
+import { getAdminTokenFromSearch, getStoredRoomAdminToken, removeAdminTokenFromAddressBar, storeRoomAdminToken } from "../lib/adminAccess";
 import { createRoom } from "../lib/api";
-import { getRoomUrl } from "../lib/roomUrl";
+import { getAdminRoomUrl, getRoomUrl } from "../lib/roomUrl";
 
 export default function RoomPage() {
   const params = useParams();
@@ -18,9 +20,12 @@ export default function RoomPage() {
   const navigate = useNavigate();
   const roomSlug = params.roomSlug ?? "";
   const participantId = useParticipantId();
+  const adminTokenFromUrl = useMemo(() => getAdminTokenFromSearch(location.search), [location.search]);
+  const [adminToken, setAdminToken] = useState<string | undefined>(() => adminTokenFromUrl ?? getStoredRoomAdminToken(roomSlug));
   const { rooms, rememberRoom, removeRoom, updateRoomTitle } = useRecentRooms();
-  const roomState = useRoom(roomSlug, participantId);
+  const roomState = useRoom(roomSlug, participantId, adminToken);
   const [shareOverlayOpen, setShareOverlayOpen] = useState(false);
+  const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const createdRoom = Boolean((location.state as { createdRoom?: boolean } | null)?.createdRoom);
@@ -32,6 +37,10 @@ export default function RoomPage() {
   const connectionStatus = useRoomRealtime({ roomSlug, participantId, onEvent, onUncertain });
 
   useEffect(() => {
+    setAdminToken(adminTokenFromUrl ?? getStoredRoomAdminToken(roomSlug));
+  }, [adminTokenFromUrl, roomSlug]);
+
+  useEffect(() => {
     if (roomState.room) {
       rememberRoom(roomState.room, roomState.ideas.length);
     }
@@ -41,14 +50,48 @@ export default function RoomPage() {
     if (roomState.loadState === "deleted") {
       removeRoom(roomSlug);
       setShareOverlayOpen(false);
+      setPermissionsOpen(false);
       setDeleteOpen(false);
     }
   }, [removeRoom, roomSlug, roomState.loadState]);
 
+  useEffect(() => {
+    if (!adminTokenFromUrl || (roomState.loadState !== "ready" && roomState.loadState !== "not-found" && roomState.loadState !== "deleted")) return;
+    if (adminToken !== adminTokenFromUrl) return;
+    if (roomState.isAdmin) {
+      storeRoomAdminToken(roomSlug, adminTokenFromUrl);
+      setAdminToken(adminTokenFromUrl);
+    } else {
+      setAdminToken(getStoredRoomAdminToken(roomSlug));
+    }
+    removeAdminTokenFromAddressBar();
+  }, [adminToken, adminTokenFromUrl, roomSlug, roomState.isAdmin, roomState.loadState]);
+
   const roomUrl = useMemo(() => getRoomUrl(roomSlug), [roomSlug]);
+  const adminUrl = useMemo(() => (roomState.isAdmin && adminToken ? getAdminRoomUrl(roomSlug, adminToken) : undefined), [adminToken, roomSlug, roomState.isAdmin]);
+  const participantPermissions = roomState.room?.participantPermissions;
+  const canAddIdeas = roomState.isAdmin || Boolean(participantPermissions?.canAddIdeas);
+  const canEditIdeas = roomState.isAdmin || Boolean(participantPermissions?.canEditIdeas);
+  const canDeleteIdeas = roomState.isAdmin || Boolean(participantPermissions?.canDeleteIdeas);
+  const canHeartIdeas = roomState.isAdmin || Boolean(participantPermissions?.canHeartIdeas);
+  const canRenameRoom = roomState.isAdmin || Boolean(participantPermissions?.canRenameRoom);
+  const canDeleteRoom = roomState.isAdmin || Boolean(participantPermissions?.canDeleteRoom);
+
+  useEffect(() => {
+    if (!roomState.isAdmin) {
+      setPermissionsOpen(false);
+    }
+  }, [roomState.isAdmin]);
+
+  useEffect(() => {
+    if (!canDeleteRoom) {
+      setDeleteOpen(false);
+    }
+  }, [canDeleteRoom]);
 
   async function createNewRoom() {
-    const room = await createRoom();
+    const { room, adminToken: nextAdminToken } = await createRoom();
+    storeRoomAdminToken(room.slug, nextAdminToken);
     rememberRoom(room, 0);
     navigate(`/r/${room.slug}`, { state: { createdRoom: true } });
   }
@@ -73,6 +116,10 @@ export default function RoomPage() {
   async function deleteRoom() {
     await roomState.actions.deleteRoom();
     removeRoom(roomSlug);
+  }
+
+  async function updateParticipantPermissions(permissions: ParticipantPermissions) {
+    await roomState.actions.updatePermissions(permissions);
   }
 
   if (roomState.loadState === "loading") {
@@ -141,6 +188,13 @@ export default function RoomPage() {
         room={roomState.room}
         ideas={roomState.ideas}
         roomUrl={roomUrl}
+        isAdmin={roomState.isAdmin}
+        canAddIdeas={canAddIdeas}
+        canEditIdeas={canEditIdeas}
+        canDeleteIdeas={canDeleteIdeas}
+        canHeartIdeas={canHeartIdeas}
+        canRenameRoom={canRenameRoom}
+        canDeleteRoom={canDeleteRoom}
         participantCount={roomState.participantCount}
         status={connectionStatus}
         recentRooms={rooms}
@@ -149,6 +203,7 @@ export default function RoomPage() {
         onCreateRoom={() => void createNewRoom()}
         onShowRecent={() => setRecentOpen(true)}
         onExpandShare={() => setShareOverlayOpen(true)}
+        onShowPermissions={() => setPermissionsOpen(true)}
         onDeleteRoom={() => setDeleteOpen(true)}
         onCreateIdea={async (text) => {
           await roomState.actions.createIdea(text);
@@ -158,6 +213,14 @@ export default function RoomPage() {
         onDeleteIdea={deleteIdea}
       />
       {shareOverlayOpen ? <ShareOverlay roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
+      {permissionsOpen && adminUrl ? (
+        <AdminPermissionsModal
+          adminUrl={adminUrl}
+          permissions={roomState.room.participantPermissions}
+          onClose={() => setPermissionsOpen(false)}
+          onUpdatePermissions={updateParticipantPermissions}
+        />
+      ) : null}
       {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
       {deleteOpen ? (
         <DeleteRoomModal
