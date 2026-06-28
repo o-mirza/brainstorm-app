@@ -78,7 +78,7 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
             <Shield size={16} className="section-icon admin-icon" />
             <h3>Admin access</h3>
           </div>
-          <p>Anyone with this link can manage permissions.</p>
+          <p>Anyone with this private link can manage permissions.</p>
           <div className="link-box">
             <span className="link-text">{adminUrl}</span>
             <CopyLinkButton value={adminUrl} />
@@ -90,7 +90,7 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
             <Users size={16} className="section-icon participants-icon" />
             <h3>Participant permissions</h3>
           </div>
-          <p>These settings only affect participants using the room link.</p>
+          <p>These settings apply to participants who join with the share link.</p>
           <div className="permissions-list">
             {PERMISSION_ROWS.map((row) => {
               const isPending = pendingKey === row.key;
