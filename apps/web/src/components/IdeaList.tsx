@@ -17,17 +17,17 @@ type Props = {
 export default function IdeaList(props: Props) {
   const itemRefs = useRef(new Map<string, HTMLElement>());
   const previousRects = useRef(new Map<string, DOMRect>());
-  const previousRenderKeys = useRef(new Set<string>());
+  const previousRenderKeys = useRef<string[]>([]);
   const hasMeasured = useRef(false);
 
   useLayoutEffect(() => {
     const nextRects = new Map<string, DOMRect>();
-    const nextRenderKeys = new Set<string>();
+    const nextRenderKeys = props.ideas.map((idea) => idea.renderKey);
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    for (const idea of props.ideas) {
-      nextRenderKeys.add(idea.renderKey);
+    for (const [index, idea] of props.ideas.entries()) {
+      const previousIndex = previousRenderKeys.current.indexOf(idea.renderKey);
 
       const element = itemRefs.current.get(idea.renderKey);
       if (!element || reduceMotion) continue;
@@ -36,7 +36,7 @@ export default function IdeaList(props: Props) {
       const previous = previousRects.current.get(idea.renderKey);
       nextRects.set(idea.renderKey, next);
 
-      if (!previous) {
+      if (previousIndex === -1) {
         // Run entering animation in JS if list was already measured (meaning this is a new card)
         // This measures the card at its true layout position BEFORE animating, avoiding skew.
         if (hasMeasured.current) {
@@ -50,6 +50,10 @@ export default function IdeaList(props: Props) {
         }
         continue;
       }
+
+      if (previousIndex === index) continue;
+
+      if (!previous) continue;
 
       const deltaY = previous.top - next.top;
       if (Math.abs(deltaY) < 1) continue;
