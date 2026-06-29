@@ -37,18 +37,18 @@ export default function Sidebar({
           <Expand size={18} />
         </button>
       </div>
-      <div className="share-panel">
-        <button className="qr-wrap qr-button" type="button" onClick={onOpenShareOverlay} aria-label="Expand sharing view">
+      <div className="room-access-panel">
+        <button className="join-code-wrap join-code-button" type="button" onClick={onOpenShareOverlay} aria-label="Expand sharing view">
           <QRCodeSVG
             value={roomUrl}
             size={242}
             bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
             fgColor={theme === "dark" ? "#f3f4f6" : "#5d626b"}
-            className="qr-real"
+            className="join-code-graphic"
           />
         </button>
-        <div className="link-box">
-          <span className="link-text">{roomUrl}</span>
+        <div className="room-url-box">
+          <span className="room-url-text">{roomUrl}</span>
           <CopyLinkButton value={roomUrl} />
         </div>
       </div>

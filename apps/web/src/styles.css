@@ -180,6 +180,7 @@ button {
 .room-title-button:focus-visible,
 .icon-button:focus-visible,
 .link-box:focus-within,
+.room-url-box:focus-within,
 .composer:focus-within,
 .export-csv-button:focus-visible,
 .idea-menu-button:focus-visible,
@@ -723,20 +724,20 @@ button {
   font-weight: 760;
 }
 
-.qr-wrap {
+.join-code-wrap {
   display: grid;
   justify-items: center;
   margin-bottom: 14px;
 }
 
-.qr-button {
+.join-code-button {
   width: 100%;
   padding: 0;
   background: transparent;
   cursor: zoom-in;
 }
 
-.qr-real {
+.join-code-graphic {
   width: min(100%, 270px);
   height: auto;
   padding: 14px;
@@ -747,16 +748,17 @@ button {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.qr-button:hover .qr-real {
+.join-code-button:hover .join-code-graphic {
   opacity: 1;
   transform: scale(1.01);
 }
 
-.qr-button:active .qr-real {
+.join-code-button:active .join-code-graphic {
   transform: scale(0.99);
 }
 
 .link-box,
+.room-url-box,
 .large-link-box {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 38px;
@@ -769,6 +771,7 @@ button {
 }
 
 .link-text,
+.room-url-text,
 .large-link-box span {
   padding: 9px 0 9px 10px;
   overflow-x: auto;
