@@ -39,14 +39,40 @@ type Props = {
 
 type SortOption = 'popular' | 'newest' | 'oldest' | 'my-hearts' | 'alphabetical';
 
+type ComposerPresence = {
+  isExiting: boolean;
+  roomSlug: string;
+};
+
 export default function AppShell(props: Props) {
   const isMobile = useMediaQuery("(max-width: 860px)");
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
+  const [composerPresence, setComposerPresence] = useState<ComposerPresence | null>(() =>
+    props.canAddIdeas ? { isExiting: false, roomSlug: props.room.slug } : null
+  );
 
   useEffect(() => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
+
+  useEffect(() => {
+    setComposerPresence((current) => {
+      if (current?.roomSlug !== props.room.slug) {
+        return props.canAddIdeas ? { isExiting: false, roomSlug: props.room.slug } : null;
+      }
+
+      if (props.canAddIdeas) {
+        return { isExiting: false, roomSlug: props.room.slug };
+      }
+
+      if (!current || current.isExiting) {
+        return current;
+      }
+
+      return { ...current, isExiting: true };
+    });
+  }, [props.canAddIdeas, props.room.slug]);
 
   function toggleSidebar() {
     setSidebarOpen((open) => !open);
@@ -112,6 +138,10 @@ export default function AppShell(props: Props) {
 
   function exportIdeasCsv() {
     downloadIdeasCsv(props.room.slug, sortedIdeas);
+  }
+
+  function handleComposerAnimationEnd() {
+    setComposerPresence((current) => (current?.isExiting ? null : current));
   }
 
   return (
@@ -181,7 +211,14 @@ export default function AppShell(props: Props) {
                 canDelete={props.canDeleteIdeas}
               />
             </div>
-            {props.canAddIdeas ? <IdeaComposer key={props.room.slug} onSubmit={props.onCreateIdea} /> : null}
+            {composerPresence ? (
+              <IdeaComposer
+                key={composerPresence.roomSlug}
+                isExiting={composerPresence.isExiting}
+                onAnimationEnd={handleComposerAnimationEnd}
+                onSubmit={props.onCreateIdea}
+              />
+            ) : null}
           </div>
         </main>
         <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />

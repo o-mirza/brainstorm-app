@@ -1,14 +1,21 @@
 import { SendHorizonal } from "lucide-react";
-import { FormEvent, KeyboardEvent, useState } from "react";
+import { useState } from "react";
+import type { AnimationEvent, FormEvent, KeyboardEvent } from "react";
 import { IDEA_TEXT_MAX_LENGTH } from "@brainstorm/shared";
 
-export default function IdeaComposer({ onSubmit }: { onSubmit: (text: string) => Promise<void> }) {
+type Props = {
+  isExiting?: boolean;
+  onAnimationEnd?: () => void;
+  onSubmit: (text: string) => Promise<void>;
+};
+
+export default function IdeaComposer({ isExiting = false, onAnimationEnd, onSubmit }: Props) {
   const [value, setValue] = useState("");
   const trimmed = value.trim();
   const nearLimit = value.length > IDEA_TEXT_MAX_LENGTH - 30;
 
   async function doSubmit() {
-    if (!trimmed || value.length > IDEA_TEXT_MAX_LENGTH) return;
+    if (isExiting || !trimmed || value.length > IDEA_TEXT_MAX_LENGTH) return;
     const submittedText = trimmed;
     setValue("");
     try {
@@ -29,19 +36,25 @@ export default function IdeaComposer({ onSubmit }: { onSubmit: (text: string) =>
     void doSubmit();
   }
 
+  function handleAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
+    if (event.currentTarget !== event.target) return;
+    onAnimationEnd?.();
+  }
+
   return (
-    <div className="composer-zone">
+    <div className={`composer-zone ${isExiting ? "is-exiting" : ""}`} onAnimationEnd={handleAnimationEnd}>
       <form className="composer" onSubmit={submit}>
         <input
           value={value}
           maxLength={IDEA_TEXT_MAX_LENGTH}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={submitOnEnter}
+          disabled={isExiting}
           placeholder="Add an idea"
           aria-label="Add an idea"
         />
         {nearLimit ? <span className="char-count">{IDEA_TEXT_MAX_LENGTH - value.length}</span> : null}
-        <button type="submit" disabled={!trimmed} aria-label="Submit idea">
+        <button type="submit" disabled={isExiting || !trimmed} aria-label="Submit idea">
           <SendHorizonal size={19} />
         </button>
       </form>
