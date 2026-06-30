@@ -57,6 +57,21 @@
   --link-text-color: #b0b4be;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  :root.theme-transitioning,
+  :root.theme-transitioning *,
+  :root.theme-transitioning *::before,
+  :root.theme-transitioning *::after {
+    transition:
+      background-color 180ms ease,
+      background 180ms ease,
+      color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      opacity 180ms ease;
+  }
+}
+
 * {
   box-sizing: border-box;
 }
