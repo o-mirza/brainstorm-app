@@ -1,5 +1,5 @@
 import type { RecentRoom } from "@brainstorm/shared";
-import { Expand, History, Moon, Plus, ShieldCheck, Sun, Trash2 } from "lucide-react";
+import { Expand, History, Moon, Plus, ShieldCheck, Sparkles, Sun, Trash2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "../hooks/useTheme";
 import CopyLinkButton from "./CopyLinkButton";
@@ -12,6 +12,7 @@ type Props = {
   onCreateRoom: () => void;
   onShowRecent: () => void;
   onOpenShareOverlay: () => void;
+  onShowAISummary: () => void;
   onShowPermissions: () => void;
   onDeleteRoom: () => void;
 };
@@ -24,6 +25,7 @@ export default function Sidebar({
   onCreateRoom,
   onShowRecent,
   onOpenShareOverlay,
+  onShowAISummary,
   onShowPermissions,
   onDeleteRoom
 }: Props) {
@@ -58,6 +60,9 @@ export default function Sidebar({
         </button>
         <button type="button" onClick={onShowRecent}>
           <History size={17} /> Recent rooms <span>{recentRooms.length}</span>
+        </button>
+        <button type="button" onClick={onShowAISummary}>
+          <Sparkles size={17} /> AI Summary
         </button>
         <button type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}>
           {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}

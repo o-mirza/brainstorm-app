@@ -29,6 +29,7 @@ type Props = {
   onCreateRoom: () => void;
   onShowRecent: () => void;
   onOpenShareOverlay: () => void;
+  onShowAISummary: () => void;
   onShowPermissions: () => void;
   onDeleteRoom: () => void;
   onCreateIdea: (text: string) => Promise<void>;
@@ -95,6 +96,7 @@ export default function AppShell(props: Props) {
         onCreateRoom={() => handleSidebarAction(props.onCreateRoom)}
         onShowRecent={() => handleSidebarAction(props.onShowRecent)}
         onOpenShareOverlay={() => handleSidebarAction(props.onOpenShareOverlay)}
+        onShowAISummary={() => handleSidebarAction(props.onShowAISummary)}
         onShowPermissions={() => handleSidebarAction(props.onShowPermissions)}
         onDeleteRoom={() => handleSidebarAction(props.onDeleteRoom)}
       />

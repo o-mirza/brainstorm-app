@@ -1,6 +1,7 @@
 import type {
   CreateRoomResponse,
   DeleteRoomResponse,
+  GenerateSummaryResponse,
   GetRoomResponse,
   RenameRoomRequest,
   RenameRoomResponse,
@@ -12,6 +13,7 @@ import { ZodError } from "zod";
 import { makeError } from "../../shared/http.js";
 import { parseParticipantHeader, roomSlugSchema } from "../../shared/validation.js";
 import type { RealtimeGateway } from "../realtime/realtime.gateway.js";
+import { generateAISummary } from "./ai-summary.service.js";
 import { createRoom, deleteRoom, getRoomSnapshot, renameRoom, updateRoomPermissions } from "./room.service.js";
 import { renameRoomRequestSchema, updateRoomPermissionsRequestSchema } from "./room.schemas.js";
 
@@ -65,6 +67,16 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
       await deleteRoom(roomSlug, adminToken);
       realtime.broadcastRoomDeleted(roomSlug);
       return { ok: true, roomSlug };
+    } catch (error) {
+      throw asBadRequest(error);
+    }
+  });
+
+  app.post<{ Params: { roomSlug: string } }>("/api/rooms/:roomSlug/ai-summary", async (request): Promise<GenerateSummaryResponse> => {
+    try {
+      const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
+      const summary = await generateAISummary(roomSlug);
+      return { summary };
     } catch (error) {
       throw asBadRequest(error);
     }

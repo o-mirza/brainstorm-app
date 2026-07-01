@@ -2,8 +2,10 @@ import type {
   CreateIdeaResponse,
   CreateRoomResponse,
   DeleteRoomResponse,
+  GenerateSummaryResponse,
   GetRoomResponse,
   HeartIdeaResponse,
+  AISummary,
   Idea,
   ParticipantPermissions,
   RenameRoomResponse,
@@ -83,6 +85,13 @@ export async function updateRoomPermissions(
     body: JSON.stringify({ participantPermissions })
   });
   return data.room;
+}
+
+export async function generateAISummary(roomSlug: string): Promise<AISummary> {
+  const data = await request<GenerateSummaryResponse>(`/api/rooms/${roomSlug}/ai-summary`, {
+    method: "POST"
+  });
+  return data.summary;
 }
 
 export async function createIdea(

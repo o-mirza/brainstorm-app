@@ -1129,6 +1129,10 @@ button {
 
 .modal-actions button,
 .route-state button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-height: 38px;
   padding: 0 12px;
   border-radius: 7px;
@@ -1180,6 +1184,167 @@ button {
 .modal-error {
   margin: 0;
   color: #a73446;
+}
+
+.ai-summary-modal {
+  width: min(640px, calc(100vw - 32px));
+}
+
+.ai-summary-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--ink);
+}
+
+.ai-summary-state {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 92px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.ai-summary-error {
+  align-items: flex-start;
+  min-height: 0;
+  padding: 10px;
+  border: 1px solid rgba(167, 52, 70, 0.28);
+  border-radius: 7px;
+  background: rgba(167, 52, 70, 0.06);
+}
+
+.ai-summary-content {
+  display: grid;
+  gap: 18px;
+  max-height: min(480px, calc(100dvh - 180px));
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.ai-summary-chart {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+
+.ai-summary-bar-row {
+  display: grid;
+  gap: 6px;
+}
+
+.ai-summary-bar-label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.ai-summary-bar-label span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ai-summary-bar-label strong {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.ai-summary-bar-track {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.ai-summary-bar-fill {
+  width: var(--bar-width);
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--green), #4c8fd8);
+  transform-origin: left center;
+  animation: aiSummaryBarIn 520ms cubic-bezier(0.2, 0, 0.2, 1) var(--bar-delay) both;
+}
+
+.ai-summary-copy {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.ai-summary-copy-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.ai-summary-prose {
+  min-width: 0;
+}
+
+.ai-summary-prose p,
+.ai-summary-prose ul,
+.ai-summary-prose ol {
+  margin: 0 0 12px;
+}
+
+.ai-summary-prose p:last-child,
+.ai-summary-prose ul:last-child,
+.ai-summary-prose ol:last-child {
+  margin-bottom: 0;
+}
+
+.ai-summary-prose ul,
+.ai-summary-prose ol {
+  padding-left: 22px;
+}
+
+.ai-summary-prose li {
+  padding-left: 2px;
+}
+
+.ai-summary-prose li + li {
+  margin-top: 6px;
+}
+
+.ai-summary-prose strong {
+  font-weight: 760;
+}
+
+@keyframes aiSummaryBarIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-summary-bar-fill {
+    animation: none;
+  }
 }
 
 .share-overlay {

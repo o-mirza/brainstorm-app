@@ -29,6 +29,20 @@ export type DeleteRoomResponse = {
   roomSlug: string;
 };
 
+export type AISummaryTheme = {
+  label: string;
+  count: number;
+};
+
+export type AISummary = {
+  prose: string;
+  themes: AISummaryTheme[];
+};
+
+export type GenerateSummaryResponse = {
+  summary: AISummary;
+};
+
 export type CreateIdeaRequest = {
   text: string;
   clientMutationId?: string;

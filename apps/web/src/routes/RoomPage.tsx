@@ -2,6 +2,7 @@ import type { Idea, ParticipantPermissions } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AdminPermissionsModal from "../components/AdminPermissionsModal";
+import AISummaryModal from "../components/AISummaryModal";
 import AppShell from "../components/AppShell";
 import DeleteRoomModal from "../components/DeleteRoomModal";
 import RecentRoomsDialog from "../components/RecentRoomsDialog";
@@ -12,7 +13,7 @@ import { useRecentRooms } from "../hooks/useRecentRooms";
 import { useRoom } from "../hooks/useRoom";
 import { useRoomRealtime } from "../hooks/useRoomRealtime";
 import { getAdminTokenFromSearch, getStoredRoomAdminToken, removeAdminTokenFromAddressBar, storeRoomAdminToken } from "../lib/adminAccess";
-import { createRoom } from "../lib/api";
+import { createRoom, generateAISummary } from "../lib/api";
 import { getAdminRoomUrl, getRoomUrl } from "../lib/roomUrl";
 
 const LOADING_DOT_SEQUENCE = ["", ".", "..", "..."] as const;
@@ -30,6 +31,7 @@ export default function RoomPage() {
   const roomState = useRoom(roomSlug, participantId, adminToken);
   const [shareOverlayOpen, setShareOverlayOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
+  const [aiSummaryOpen, setAISummaryOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [loadingDotIndex, setLoadingDotIndex] = useState(0);
@@ -56,6 +58,7 @@ export default function RoomPage() {
       removeRoom(roomSlug);
       setShareOverlayOpen(false);
       setPermissionsOpen(false);
+      setAISummaryOpen(false);
       setDeleteOpen(false);
     }
   }, [removeRoom, roomSlug, roomState.loadState]);
@@ -251,6 +254,7 @@ export default function RoomPage() {
         onCreateRoom={() => void createNewRoom()}
         onShowRecent={() => setRecentOpen(true)}
         onOpenShareOverlay={() => setShareOverlayOpen(true)}
+        onShowAISummary={() => setAISummaryOpen(true)}
         onShowPermissions={() => setPermissionsOpen(true)}
         onDeleteRoom={() => setDeleteOpen(true)}
         onCreateIdea={async (text) => {
@@ -266,6 +270,9 @@ export default function RoomPage() {
         onDeleteIdea={deleteIdea}
       />
       {shareOverlayOpen ? <ShareOverlay roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
+      {aiSummaryOpen ? (
+        <AISummaryModal roomSlug={roomSlug} onClose={() => setAISummaryOpen(false)} onGenerate={generateAISummary} />
+      ) : null}
       {permissionsOpen && adminUrl ? (
         <AdminPermissionsModal
           adminUrl={adminUrl}
