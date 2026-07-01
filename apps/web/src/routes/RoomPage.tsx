@@ -15,6 +15,8 @@ import { getAdminTokenFromSearch, getStoredRoomAdminToken, removeAdminTokenFromA
 import { createRoom } from "../lib/api";
 import { getAdminRoomUrl, getRoomUrl } from "../lib/roomUrl";
 
+const LOADING_DOT_SEQUENCE = ["", ".", "..", "..."] as const;
+
 export default function RoomPage() {
   const params = useParams();
   const location = useLocation();
@@ -30,6 +32,7 @@ export default function RoomPage() {
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [loadingDotIndex, setLoadingDotIndex] = useState(0);
   const createdRoom = Boolean((location.state as { createdRoom?: boolean } | null)?.createdRoom);
 
   const onEvent = useCallback(roomState.applyServerEvent, [roomState.applyServerEvent]);
@@ -90,6 +93,17 @@ export default function RoomPage() {
       setDeleteOpen(false);
     }
   }, [canDeleteRoom]);
+
+  useEffect(() => {
+    if (roomState.loadState !== "loading") return;
+
+    setLoadingDotIndex(0);
+    const intervalId = window.setInterval(() => {
+      setLoadingDotIndex((currentIndex) => (currentIndex + 1) % LOADING_DOT_SEQUENCE.length);
+    }, 400);
+
+    return () => window.clearInterval(intervalId);
+  }, [roomState.loadState]);
 
   async function createNewRoom() {
     try {
@@ -159,7 +173,7 @@ export default function RoomPage() {
   if (roomState.loadState === "loading") {
     return (
       <main className="route-state">
-        <h1>Loading room</h1>
+        <h1>Loading room{LOADING_DOT_SEQUENCE[loadingDotIndex]}</h1>
       </main>
     );
   }
