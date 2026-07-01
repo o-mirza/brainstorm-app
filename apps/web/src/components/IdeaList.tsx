@@ -1,5 +1,5 @@
 import type { Idea } from "@brainstorm/shared";
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { ClientIdea } from "../hooks/useRoom";
 import IdeaCard from "./IdeaCard";
 
@@ -14,19 +14,65 @@ type Props = {
   canDelete: boolean;
 };
 
+type RenderItem = {
+  idea: ClientIdea;
+  exiting: boolean;
+};
+
 export default function IdeaList(props: Props) {
+  const [renderItems, setRenderItems] = useState<RenderItem[]>(() => props.ideas.map((idea) => ({ idea, exiting: false })));
   const itemRefs = useRef(new Map<string, HTMLElement>());
   const previousRects = useRef(new Map<string, DOMRect>());
   const previousRenderKeys = useRef<string[]>([]);
+  const exitAnimations = useRef(new Map<string, Animation>());
   const hasMeasured = useRef(false);
 
   useLayoutEffect(() => {
+    return () => {
+      for (const animation of exitAnimations.current.values()) {
+        animation.cancel();
+      }
+      exitAnimations.current.clear();
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const nextIdeasByKey = new Map(props.ideas.map((idea) => [idea.renderKey, idea]));
+
+    setRenderItems((current) => {
+      if (reduceMotion) {
+        return props.ideas.map((idea) => ({ idea, exiting: false }));
+      }
+
+      const currentByKey = new Map(current.map((item) => [item.idea.renderKey, item]));
+      const nextItems = props.ideas.map((idea) => ({ idea, exiting: false }));
+
+      current.forEach((item, index) => {
+        if (nextIdeasByKey.has(item.idea.renderKey)) return;
+
+        const nextIndex = Math.min(index, nextItems.length);
+        nextItems.splice(nextIndex, 0, { idea: item.idea, exiting: true });
+      });
+
+      for (const idea of props.ideas) {
+        if (!currentByKey.get(idea.renderKey)?.exiting) continue;
+        exitAnimations.current.get(idea.renderKey)?.cancel();
+        exitAnimations.current.delete(idea.renderKey);
+      }
+
+      return nextItems;
+    });
+  }, [props.ideas]);
+
+  useLayoutEffect(() => {
     const nextRects = new Map<string, DOMRect>();
-    const nextRenderKeys = props.ideas.map((idea) => idea.renderKey);
+    const nextRenderKeys = renderItems.map((item) => item.idea.renderKey);
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    for (const [index, idea] of props.ideas.entries()) {
+    for (const [index, item] of renderItems.entries()) {
+      const { idea } = item;
       const previousIndex = previousRenderKeys.current.indexOf(idea.renderKey);
 
       const element = itemRefs.current.get(idea.renderKey);
@@ -39,7 +85,7 @@ export default function IdeaList(props: Props) {
       if (previousIndex === -1) {
         // Run entering animation in JS if list was already measured (meaning this is a new card)
         // This measures the card at its true layout position BEFORE animating, avoiding skew.
-        if (hasMeasured.current) {
+        if (hasMeasured.current && !item.exiting) {
           element.animate(
             [
               { opacity: 0, transform: "translateY(4px)" },
@@ -70,9 +116,34 @@ export default function IdeaList(props: Props) {
     previousRects.current = nextRects;
     previousRenderKeys.current = nextRenderKeys;
     hasMeasured.current = true;
-  }, [props.ideas]);
 
-  if (props.ideas.length === 0) {
+    if (reduceMotion) return;
+
+    for (const item of renderItems) {
+      if (!item.exiting || exitAnimations.current.has(item.idea.renderKey)) continue;
+
+      const element = itemRefs.current.get(item.idea.renderKey);
+      if (!element) continue;
+
+      const computedStyle = window.getComputedStyle(element);
+      const animation = element.animate(
+        [
+          { opacity: computedStyle.opacity, transform: computedStyle.transform === "none" ? "translateY(0) scale(1)" : computedStyle.transform },
+          { opacity: 0, transform: "translateY(-4px) scale(0.99)" }
+        ],
+        { duration: 150, easing: "ease", fill: "forwards" }
+      );
+
+      exitAnimations.current.set(item.idea.renderKey, animation);
+
+      animation.onfinish = () => {
+        exitAnimations.current.delete(item.idea.renderKey);
+        setRenderItems((current) => current.filter((currentItem) => currentItem.idea.renderKey !== item.idea.renderKey || !currentItem.exiting));
+      };
+    }
+  }, [renderItems]);
+
+  if (renderItems.length === 0) {
     return (
       <div className="empty">
         <div>
@@ -85,12 +156,13 @@ export default function IdeaList(props: Props) {
 
   return (
     <div className="ideas">
-      {props.ideas.map((idea) => (
+      {renderItems.map(({ idea, exiting }) => (
         <IdeaCard
           key={idea.renderKey}
           ref={(element) => {
             if (element) {
               itemRefs.current.set(idea.renderKey, element);
+              element.style.pointerEvents = exiting ? "none" : "";
             } else {
               itemRefs.current.delete(idea.renderKey);
             }
@@ -99,9 +171,9 @@ export default function IdeaList(props: Props) {
           onToggleHeart={props.onToggleHeart}
           onUpdate={props.onUpdate}
           onDelete={props.onDelete}
-          canHeart={props.canHeart}
-          canEdit={props.canEdit}
-          canDelete={props.canDelete}
+          canHeart={!exiting && props.canHeart}
+          canEdit={!exiting && props.canEdit}
+          canDelete={!exiting && props.canDelete}
         />
       ))}
     </div>
