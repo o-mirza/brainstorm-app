@@ -20,6 +20,20 @@ type ThemeBarStyle = CSSProperties & {
 };
 
 const initialSummaryRequests = new Map<string, Promise<AISummary>>();
+const loadingMessages = [
+  "Reading the room...",
+  "Connecting the dots...",
+  "Finding the patterns..."
+] as const;
+const defaultLoadingMessage = loadingMessages[0];
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
 
 function renderBoldText(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
@@ -128,6 +142,7 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
   const [closing, setClosing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [state, setState] = useState<SummaryState>({ status: "loading" });
+  const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
 
   const generate = useCallback(async (reuseInFlight = false) => {
     setState({ status: "loading" });
@@ -156,6 +171,51 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
   useEffect(() => {
     void generate(true);
   }, [generate]);
+
+  useEffect(() => {
+    if (state.status !== "loading") {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      if (prefersReducedMotion()) {
+        setLoadingMessage(defaultLoadingMessage);
+        return;
+      }
+
+      let messageIndex = 0;
+      while (!cancelled) {
+        const message = loadingMessages[messageIndex % loadingMessages.length] ?? defaultLoadingMessage;
+        let nextMessage = "";
+        setLoadingMessage(nextMessage);
+
+        for (const char of message) {
+          if (cancelled) return;
+          nextMessage += char;
+          setLoadingMessage(nextMessage);
+          await sleep(28);
+        }
+
+        await sleep(900);
+
+        while (nextMessage.length > 0) {
+          if (cancelled) return;
+          nextMessage = nextMessage.slice(0, -1);
+          setLoadingMessage(nextMessage);
+          await sleep(16);
+        }
+
+        await sleep(140);
+        messageIndex += 1;
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state.status]);
 
   function close() {
     setClosing(true);
@@ -195,9 +255,9 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
         </div>
 
         {state.status === "loading" ? (
-          <div className="ai-summary-state" role="status">
+          <div className="ai-summary-state" role="status" aria-label="Generating summary">
             <Loader2 className="spinner" size={18} aria-hidden="true" />
-            <span>Generating summary...</span>
+            <span className="ai-summary-loading-message" aria-hidden="true">{loadingMessage || "\u00a0"}</span>
           </div>
         ) : null}
 

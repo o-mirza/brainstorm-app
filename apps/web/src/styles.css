@@ -1208,6 +1208,10 @@ button {
   font-size: 13px;
 }
 
+.ai-summary-loading-message {
+  min-width: 23ch;
+}
+
 .ai-summary-error {
   align-items: flex-start;
   min-height: 0;
