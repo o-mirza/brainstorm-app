@@ -1201,6 +1201,7 @@ button {
 .ai-summary-state {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 9px;
   min-height: 92px;
   color: var(--muted);
