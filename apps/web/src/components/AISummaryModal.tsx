@@ -23,7 +23,7 @@ const initialSummaryRequests = new Map<string, Promise<AISummary>>();
 const loadingMessages = [
   "Reading the room...",
   "Connecting the dots...",
-  "Finding the patterns..."
+  "Pulling it together..."
 ] as const;
 const defaultLoadingMessage = loadingMessages[0];
 
