@@ -1494,6 +1494,11 @@ button {
   text-align: center;
 }
 
+.route-state-pending {
+  color: var(--muted);
+  animation: routeStatePendingPulse 1800ms ease-in-out infinite;
+}
+
 .route-state h1 {
   margin: 0;
   font-size: 24px;
@@ -1781,6 +1786,17 @@ button {
   }
 }
 
+@keyframes routeStatePendingPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1788,5 +1804,9 @@ button {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .route-state-pending {
+    animation: none;
   }
 }

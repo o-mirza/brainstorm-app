@@ -29,7 +29,7 @@ export default function HomeRedirect() {
   }, [navigate, rememberRoom, toast]);
 
   return (
-    <main className="route-state">
+    <main className={error ? "route-state" : "route-state route-state-pending"}>
       <h1>{error ? "Could not create a room" : "Creating room"}</h1>
       {error ? <p>{error}</p> : null}
     </main>
