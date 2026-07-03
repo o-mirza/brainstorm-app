@@ -142,7 +142,7 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
   const [closing, setClosing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [state, setState] = useState<SummaryState>({ status: "loading" });
-  const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
+  const [loadingMessage, setLoadingMessage] = useState<string>(defaultLoadingMessage);
 
   const generate = useCallback(async (reuseInFlight = false) => {
     setState({ status: "loading" });
