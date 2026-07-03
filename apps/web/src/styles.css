@@ -305,6 +305,10 @@ button {
   font-size: 13px;
 }
 
+.connection-status-count {
+  display: none;
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
@@ -1644,8 +1648,12 @@ button {
     font-size: 19px;
   }
 
-  .connection-status span:nth-child(2) {
+  .connection-status-label {
     display: none;
+  }
+
+  .connection-status-count {
+    display: inline;
   }
 
   .ideas-scroll {
