@@ -1,0 +1,83 @@
+import type { Idea } from "@brainstorm/shared";
+import { X } from "lucide-react";
+import { motion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { easeStandard, modalBackdropVariants, modalPanelVariants } from "../lib/animations";
+
+type Props = {
+  idea: Idea;
+  onClose: () => void;
+  onConfirm: (ideaId: string) => Promise<void>;
+};
+
+export default function DeleteIdeaModal({ idea, onClose, onConfirm }: Props) {
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => confirmRef.current?.focus(), []);
+
+  function close() {
+    if (deleting) return;
+    onClose();
+  }
+
+  async function confirm() {
+    if (deleting) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await onConfirm(idea.id);
+      onClose();
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Idea could not be deleted.");
+      setDeleting(false);
+    }
+  }
+
+  const modal = (
+    <motion.div
+      className="modal-backdrop"
+      role="presentation"
+      variants={modalBackdropVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.15, ease: easeStandard }}
+      onMouseDown={close}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <motion.div
+        className="edit-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Delete idea"
+        variants={modalPanelVariants}
+        transition={{ duration: 0.15, ease: easeStandard }}
+        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="modal-head">
+          <h2>Delete idea</h2>
+          <button className="icon-button" type="button" onClick={close} aria-label="Close" disabled={deleting}>
+            <X size={18} />
+          </button>
+        </div>
+        <p className="delete-modal-copy">This removes the idea and its comments for everyone in the room. This cannot be undone.</p>
+        <div className="delete-item-preview">{idea.text}</div>
+        {error ? <p className="modal-error">{error}</p> : null}
+        <div className="modal-actions">
+          <button type="button" onClick={close} disabled={deleting}>
+            Cancel
+          </button>
+          <button ref={confirmRef} className="danger-button" type="button" onClick={() => void confirm()} disabled={deleting}>
+            {deleting ? "Deleting..." : "Delete idea"}
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
+  return createPortal(modal, document.body);
+}

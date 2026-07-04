@@ -39,6 +39,12 @@ export const ideaItemVariants: Variants = {
   exit: { opacity: 0, y: -4, scale: 0.99, pointerEvents: "none" }
 };
 
+export const commentItemVariants: Variants = {
+  hidden: { opacity: 0, y: 4 },
+  visible: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -4, scale: 0.99, pointerEvents: "none" }
+};
+
 export const toastVariants: Variants = {
   hidden: { opacity: 0, y: 14 },
   visible: { opacity: 1, y: 0 },

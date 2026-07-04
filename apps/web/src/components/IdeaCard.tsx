@@ -3,6 +3,7 @@ import { Clipboard, Heart, MessageSquare, MoreVertical, Pencil, Trash2 } from "l
 import { AnimatePresence } from "motion/react";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
+import DeleteIdeaModal from "./DeleteIdeaModal";
 import TextEditModal from "./TextEditModal";
 import { useToast } from "./ToastProvider";
 
@@ -26,6 +27,7 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [pulsing, setPulsing] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +41,7 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
 
   useEffect(() => {
     if (!canEdit) setEditing(false);
+    if (!canDelete) setDeleting(false);
     if (!canEdit && !canDelete) setMenuOpen(false);
   }, [canDelete, canEdit]);
 
@@ -140,7 +143,7 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
             <Clipboard size={15} /> Copy text
           </button>
           {canDelete ? (
-            <button type="button" data-action="delete" onClick={() => { setMenuOpen(false); void onDelete(idea.id).catch(() => undefined); }}>
+            <button type="button" data-action="delete" onClick={() => { setMenuOpen(false); setDeleting(true); }}>
               <Trash2 size={15} /> Delete
             </button>
           ) : null}
@@ -153,6 +156,15 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
             initialValue={idea.text}
             onClose={() => setEditing(false)}
             onSave={(text) => onUpdate(idea.id, text)}
+          />
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {deleting ? (
+          <DeleteIdeaModal
+            idea={idea}
+            onClose={() => setDeleting(false)}
+            onConfirm={onDelete}
           />
         ) : null}
       </AnimatePresence>

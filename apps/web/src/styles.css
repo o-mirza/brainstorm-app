@@ -698,6 +698,13 @@ button {
   gap: 10px;
   margin: 0 28px;
   padding-bottom: 16px;
+  animation: comments-state-fade-in 180ms ease-out;
+}
+
+.comments-section.is-empty {
+  margin: 0;
+  padding: 0;
+  animation: none;
 }
 
 .comment-item {
@@ -1364,19 +1371,30 @@ button {
   cursor: not-allowed;
 }
 
-.delete-room-copy {
+.delete-room-copy,
+.delete-modal-copy {
   margin: 0;
   color: var(--ink);
   line-height: 1.45;
 }
 
-.delete-room-summary {
+.delete-room-summary,
+.delete-item-preview {
   display: grid;
   gap: 3px;
   padding: 10px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: var(--surface-2);
+}
+
+.delete-item-preview {
+  max-height: 140px;
+  overflow: auto;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .delete-room-summary strong {

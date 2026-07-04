@@ -1,8 +1,10 @@
 import type { Comment } from "@brainstorm/shared";
-import { Clipboard, Loader2, MoreHorizontal, Pencil, Trash2, User } from "lucide-react";
-import { AnimatePresence } from "motion/react";
+import { Clipboard, MoreHorizontal, Pencil, Trash2, User } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClientComment } from "../hooks/useRoom";
+import { commentItemVariants, easeStandard } from "../lib/animations";
+import DeleteCommentModal from "./DeleteCommentModal";
 import TextEditModal from "./TextEditModal";
 import { useToast } from "./ToastProvider";
 
@@ -36,9 +38,9 @@ function formatDate(value: string): string {
 export default function CommentThread({ ideaId, comments, participantId, isAdmin, onLoad, onUpdate, onDelete }: Props) {
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingComment, setEditingComment] = useState<ClientComment | null>(null);
+  const [deletingComment, setDeletingComment] = useState<ClientComment | null>(null);
   const menuRefs = useRef(new Map<string, HTMLDivElement>());
   const formatter = useMemo(() => ({ format: formatDate }), []);
 
@@ -78,15 +80,6 @@ export default function CommentThread({ ideaId, comments, participantId, isAdmin
     return null;
   }
 
-  if (comments.length === 0) {
-    return (
-      <div className="comments-empty">
-        <strong>No comments yet</strong>
-        <span>Start the discussion below.</span>
-      </div>
-    );
-  }
-
   async function copyText(comment: Comment) {
     try {
       await navigator.clipboard.writeText(comment.text);
@@ -100,80 +93,94 @@ export default function CommentThread({ ideaId, comments, participantId, isAdmin
 
   return (
     <>
-      <section className="comments-section" aria-label="Comments">
-        {comments.map((comment) => {
-          const canManage = isAdmin || comment.participantId === participantId;
-          const pending = pendingDeleteId === comment.id;
-          const menuOpen = openMenuId === comment.id;
-          return (
-            <article className={`comment-item ${menuOpen ? "menu-open" : ""}`} key={comment.renderKey}>
-              <div
-                className="comment-avatar"
-                style={{ backgroundColor: avatarColor(comment.participantId) }}
-                aria-label="Comment author"
+      <section className={`comments-section ${comments.length === 0 ? "is-empty" : ""}`} aria-label="Comments">
+        <AnimatePresence initial={false} mode="popLayout">
+          {comments.map((comment) => {
+            const canManage = isAdmin || comment.participantId === participantId;
+            const menuOpen = openMenuId === comment.id;
+            return (
+              <motion.article
+                className={`comment-item ${menuOpen ? "menu-open" : ""}`}
+                key={comment.renderKey}
+                layout
+                variants={commentItemVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                transition={{ duration: 0.18, ease: easeStandard }}
               >
-                <User size={17} aria-hidden="true" />
-              </div>
-              <div className="comment-body">
-                <div className="comment-meta">
-                  <time dateTime={comment.createdAt}>{formatter.format(comment.createdAt)}</time>
-                  <div
-                    className="comment-actions"
-                    ref={(element) => {
-                      if (element) {
-                        menuRefs.current.set(comment.id, element);
-                      } else {
-                        menuRefs.current.delete(comment.id);
-                      }
-                    }}
-                  >
-                    <button
-                      type="button"
-                      className="comment-menu-button"
-                      aria-label="Comment actions"
-                      aria-expanded={menuOpen}
-                      onClick={() => setOpenMenuId((current) => (current === comment.id ? null : comment.id))}
+                <div
+                  className="comment-avatar"
+                  style={{ backgroundColor: avatarColor(comment.participantId) }}
+                  aria-label="Comment author"
+                >
+                  <User size={17} aria-hidden="true" />
+                </div>
+                <div className="comment-body">
+                  <div className="comment-meta">
+                    <time dateTime={comment.createdAt}>{formatter.format(comment.createdAt)}</time>
+                    <div
+                      className="comment-actions"
+                      ref={(element) => {
+                        if (element) {
+                          menuRefs.current.set(comment.id, element);
+                        } else {
+                          menuRefs.current.delete(comment.id);
+                        }
+                      }}
                     >
-                      <MoreHorizontal size={16} />
-                    </button>
-                    <div className={`comment-menu ${menuOpen ? "open" : ""}`}>
-                      {canManage ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingComment(comment);
-                            setOpenMenuId(null);
-                          }}
-                        >
-                          <Pencil size={15} /> Edit
-                        </button>
-                      ) : null}
-                      <button type="button" onClick={() => { void copyText(comment); }}>
-                        <Clipboard size={15} /> Copy text
+                      <button
+                        type="button"
+                        className="comment-menu-button"
+                        aria-label="Comment actions"
+                        aria-expanded={menuOpen}
+                        onClick={() => setOpenMenuId((current) => (current === comment.id ? null : comment.id))}
+                      >
+                        <MoreHorizontal size={16} />
                       </button>
-                      {canManage ? (
-                        <button
-                          type="button"
-                          data-action="delete"
-                          disabled={pending}
-                          onClick={() => {
-                            setOpenMenuId(null);
-                            setPendingDeleteId(comment.id);
-                            void onDelete(comment).finally(() => setPendingDeleteId(null));
-                          }}
-                        >
-                          {pending ? <Loader2 size={15} className="spinner" /> : <Trash2 size={15} />} Delete
+                      <div className={`comment-menu ${menuOpen ? "open" : ""}`}>
+                        {canManage ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingComment(comment);
+                              setOpenMenuId(null);
+                            }}
+                          >
+                            <Pencil size={15} /> Edit
+                          </button>
+                        ) : null}
+                        <button type="button" onClick={() => { void copyText(comment); }}>
+                          <Clipboard size={15} /> Copy text
                         </button>
-                      ) : null}
+                        {canManage ? (
+                          <button
+                            type="button"
+                            data-action="delete"
+                            onClick={() => {
+                              setOpenMenuId(null);
+                              setDeletingComment(comment);
+                            }}
+                          >
+                            <Trash2 size={15} /> Delete
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
+                  <p>{comment.text}</p>
                 </div>
-                <p>{comment.text}</p>
-              </div>
-            </article>
-          );
-        })}
+              </motion.article>
+            );
+          })}
+        </AnimatePresence>
       </section>
+      {comments.length === 0 ? (
+        <div className="comments-empty">
+          <strong>No comments yet</strong>
+          <span>Start the discussion below.</span>
+        </div>
+      ) : null}
       <AnimatePresence>
         {editingComment ? (
           <TextEditModal
@@ -181,6 +188,15 @@ export default function CommentThread({ ideaId, comments, participantId, isAdmin
             initialValue={editingComment.text}
             onClose={() => setEditingComment(null)}
             onSave={(text) => onUpdate(editingComment.id, text)}
+          />
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {deletingComment ? (
+          <DeleteCommentModal
+            comment={deletingComment}
+            onClose={() => setDeletingComment(null)}
+            onConfirm={onDelete}
           />
         ) : null}
       </AnimatePresence>
