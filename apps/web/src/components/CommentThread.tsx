@@ -35,7 +35,6 @@ function formatDate(value: string): string {
 
 export default function CommentThread({ ideaId, comments, participantId, isAdmin, onLoad, onUpdate, onDelete }: Props) {
   const toast = useToast();
-  const [loading, setLoading] = useState(!comments);
   const [error, setError] = useState<string | null>(null);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -55,42 +54,31 @@ export default function CommentThread({ ideaId, comments, participantId, isAdmin
 
   useEffect(() => {
     if (comments) {
-      setLoading(false);
       setError(null);
       return;
     }
 
     let active = true;
-    setLoading(true);
     setError(null);
-    onLoad(ideaId)
-      .catch((loadError) => {
-        if (!active) return;
-        setError(loadError instanceof Error ? loadError.message : "Comments could not be loaded.");
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
+    onLoad(ideaId).catch((loadError) => {
+      if (!active) return;
+      setError(loadError instanceof Error ? loadError.message : "Comments could not be loaded.");
+    });
 
     return () => {
       active = false;
     };
   }, [comments, ideaId, onLoad]);
 
-  if (loading) {
-    return (
-      <div className="comments-state">
-        <Loader2 size={16} className="spinner" />
-        <span>Loading comments</span>
-      </div>
-    );
-  }
-
   if (error) {
     return <div className="comments-state comments-error">{error}</div>;
   }
 
-  if (!comments || comments.length === 0) {
+  if (!comments) {
+    return null;
+  }
+
+  if (comments.length === 0) {
     return (
       <div className="comments-empty">
         <strong>No comments yet</strong>

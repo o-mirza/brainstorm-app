@@ -12,13 +12,15 @@ type Props = {
   onUpdate: (ideaId: string, text: string) => Promise<void>;
   onDelete: (ideaId: string) => Promise<void>;
   onOpenComments: (ideaId: string) => void;
+  onCardClick?: (ideaId: string) => void;
+  cardAriaLabel?: string;
   canHeart: boolean;
   canEdit: boolean;
   canDelete: boolean;
 };
 
 const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
-  { idea, onToggleHeart, onUpdate, onDelete, onOpenComments, canHeart, canEdit, canDelete },
+  { idea, onToggleHeart, onUpdate, onDelete, onOpenComments, onCardClick, cardAriaLabel, canHeart, canEdit, canDelete },
   ref
 ) {
   const toast = useToast();
@@ -63,11 +65,15 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
     onOpenComments(idea.id);
   }
 
+  function handleCardClick() {
+    (onCardClick ?? onOpenComments)(idea.id);
+  }
+
   function openCommentsFromKeyboard(event: KeyboardEvent<HTMLElement>) {
     if (event.target !== event.currentTarget) return;
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
-    openComments();
+    handleCardClick();
   }
 
   function stopCardClick(event: ReactMouseEvent<HTMLElement>) {
@@ -85,8 +91,8 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
       style={transitionStyle}
       role="button"
       tabIndex={0}
-      aria-label={`Open comments for idea: ${idea.text}`}
-      onClick={openComments}
+      aria-label={cardAriaLabel ?? `Open comments for idea: ${idea.text}`}
+      onClick={handleCardClick}
       onKeyDown={openCommentsFromKeyboard}
     >
       <div className="vote-column" onClick={stopCardClick}>

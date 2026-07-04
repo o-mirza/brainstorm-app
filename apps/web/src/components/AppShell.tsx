@@ -238,6 +238,8 @@ export default function AppShell(props: Props) {
                     onUpdate={props.onUpdateIdea}
                     onDelete={props.onDeleteIdea}
                     onOpenComments={() => undefined}
+                    onCardClick={closeComments}
+                    cardAriaLabel={`Back to ideas from idea: ${selectedIdea.text}`}
                     canHeart={props.canHeartIdeas}
                     canEdit={props.canEditIdeas}
                     canDelete={props.canDeleteIdeas}
