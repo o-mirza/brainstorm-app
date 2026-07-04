@@ -101,7 +101,7 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
       <div className="vote-column" onClick={stopCardClick}>
         {canHeart ? (
           <button
-            className={`vote-button ${pulsing ? "pulse" : ""}`}
+            className={`vote-control vote-button ${pulsing ? "pulse" : ""}`}
             type="button"
             onClick={heart}
             aria-pressed={idea.heartedByMe}
@@ -111,7 +111,7 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
             <span className="vote-count">{idea.heartCount}</span>
           </button>
         ) : (
-          <div className="vote-count-static" aria-label={`${idea.heartCount} hearts`}>
+          <div className="vote-control vote-count-static" aria-label={`${idea.heartCount} hearts`}>
             <Heart />
             <span className="vote-count">{idea.heartCount}</span>
           </div>
