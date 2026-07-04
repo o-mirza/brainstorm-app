@@ -1,6 +1,8 @@
 import type { AISummary } from "@brainstorm/shared";
 import { Check, Copy, Loader2, RefreshCw, Sparkles, X } from "lucide-react";
+import { motion } from "motion/react";
 import { Fragment, type CSSProperties, type ReactNode, useCallback, useEffect, useState } from "react";
+import { easeStandard, modalBackdropVariants, modalPanelVariants } from "../lib/animations";
 import { useToast } from "./ToastProvider";
 
 type Props = {
@@ -139,7 +141,6 @@ function ThemeChart({ summary }: { summary: AISummary }) {
 
 export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props) {
   const toast = useToast();
-  const [closing, setClosing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [state, setState] = useState<SummaryState>({ status: "loading" });
   const [loadingMessage, setLoadingMessage] = useState<string>(defaultLoadingMessage);
@@ -217,11 +218,6 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
     };
   }, [state.status]);
 
-  function close() {
-    setClosing(true);
-    window.setTimeout(onClose, 140);
-  }
-
   async function copySummary(prose: string) {
     try {
       await navigator.clipboard.writeText(prose);
@@ -236,12 +232,23 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
   const generateLabel = state.status === "loaded" ? "Regenerate" : "Retry";
 
   return (
-    <div className={`modal-backdrop ${closing ? "closing" : ""}`} role="presentation" onMouseDown={close}>
-      <section
+    <motion.div
+      className="modal-backdrop"
+      role="presentation"
+      variants={modalBackdropVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.15, ease: easeStandard }}
+      onMouseDown={onClose}
+    >
+      <motion.section
         className="edit-modal ai-summary-modal"
         role="dialog"
         aria-modal="true"
         aria-label="AI Summary"
+        variants={modalPanelVariants}
+        transition={{ duration: 0.15, ease: easeStandard }}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal-head">
@@ -249,7 +256,7 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
             <Sparkles size={18} aria-hidden="true" />
             <h2>AI Summary</h2>
           </div>
-          <button className="icon-button" type="button" onClick={close} aria-label="Close AI summary">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Close AI summary">
             <X size={18} />
           </button>
         </div>
@@ -293,7 +300,7 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
         ) : null}
 
         <div className="modal-actions">
-          <button type="button" onClick={close}>
+          <button type="button" onClick={onClose}>
             Close
           </button>
           <button type="button" onClick={() => void generate(false)} disabled={state.status === "loading"}>
@@ -301,7 +308,7 @@ export default function AISummaryModal({ roomSlug, onClose, onGenerate }: Props)
             {generateLabel}
           </button>
         </div>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   );
 }

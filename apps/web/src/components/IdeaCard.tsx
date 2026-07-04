@@ -1,5 +1,6 @@
 import type { Idea } from "@brainstorm/shared";
 import { Clipboard, Heart, MessageSquare, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { forwardRef, useEffect, useRef, useState } from "react";
 import type { CSSProperties, KeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
 import TextEditModal from "./TextEditModal";
@@ -139,14 +140,16 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
           ) : null}
         </div>
       </div>
-      {editing ? (
-        <TextEditModal
-          title="Edit idea"
-          initialValue={idea.text}
-          onClose={() => setEditing(false)}
-          onSave={(text) => onUpdate(idea.id, text)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {editing ? (
+          <TextEditModal
+            title="Edit idea"
+            initialValue={idea.text}
+            onClose={() => setEditing(false)}
+            onSave={(text) => onUpdate(idea.id, text)}
+          />
+        ) : null}
+      </AnimatePresence>
     </article>
   );
 });

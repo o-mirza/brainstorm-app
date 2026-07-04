@@ -1,5 +1,6 @@
 import type { Comment } from "@brainstorm/shared";
 import { Clipboard, Loader2, MoreHorizontal, Pencil, Trash2, User } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ClientComment } from "../hooks/useRoom";
 import TextEditModal from "./TextEditModal";
@@ -185,14 +186,16 @@ export default function CommentThread({ ideaId, comments, participantId, isAdmin
           );
         })}
       </section>
-      {editingComment ? (
-        <TextEditModal
-          title="Edit comment"
-          initialValue={editingComment.text}
-          onClose={() => setEditingComment(null)}
-          onSave={(text) => onUpdate(editingComment.id, text)}
-        />
-      ) : null}
+      <AnimatePresence>
+        {editingComment ? (
+          <TextEditModal
+            title="Edit comment"
+            initialValue={editingComment.text}
+            onClose={() => setEditingComment(null)}
+            onSave={(text) => onUpdate(editingComment.id, text)}
+          />
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }

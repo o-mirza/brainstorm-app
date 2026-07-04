@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { easeStandard, toastVariants } from "../lib/animations";
 
 type ToastKind = "success" | "error" | "info";
 
@@ -7,7 +9,6 @@ type Toast = {
   id: number;
   kind: ToastKind;
   message: string;
-  exiting: boolean;
 };
 
 type ToastApi = {
@@ -29,17 +30,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
       timers.current.delete(id);
     }
-    setToasts((current) => current.map((toast) => (toast.id === id ? { ...toast, exiting: true } : toast)));
-    window.setTimeout(() => {
-      setToasts((current) => current.filter((toast) => toast.id !== id));
-    }, 160);
+    setToasts((current) => current.filter((toast) => toast.id !== id));
   }, []);
 
   const add = useCallback(
     (kind: ToastKind, message: string) => {
       const id = nextId.current++;
       const duration = kind === "error" ? 5000 : 2500;
-      setToasts((current) => [...current, { id, kind, message, exiting: false }]);
+      setToasts((current) => [...current, { id, kind, message }]);
       timers.current.set(id, window.setTimeout(() => dismiss(id), duration));
     },
     [dismiss]
@@ -67,20 +65,27 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div className="toast-stack" aria-label="Notifications">
-        {toasts.map((toast) => (
-          <div
-            className={`toast toast-${toast.kind} ${toast.exiting ? "toast-exiting" : ""}`}
-            key={toast.id}
-            role={toast.kind === "error" ? "alert" : "status"}
-          >
-            <span>{toast.message}</span>
-            {toast.kind === "error" ? (
-              <button type="button" onClick={() => dismiss(toast.id)} aria-label="Dismiss notification">
-                <X size={15} />
-              </button>
-            ) : null}
-          </div>
-        ))}
+        <AnimatePresence initial={false}>
+          {toasts.map((toast) => (
+            <motion.div
+              className={`toast toast-${toast.kind}`}
+              key={toast.id}
+              role={toast.kind === "error" ? "alert" : "status"}
+              variants={toastVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.16, ease: easeStandard }}
+            >
+              <span>{toast.message}</span>
+              {toast.kind === "error" ? (
+                <button type="button" onClick={() => dismiss(toast.id)} aria-label="Dismiss notification">
+                  <X size={15} />
+                </button>
+              ) : null}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </ToastContext.Provider>
   );

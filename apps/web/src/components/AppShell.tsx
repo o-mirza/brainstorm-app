@@ -1,6 +1,7 @@
 import type { Comment, Idea, RecentRoom, Room } from "@brainstorm/shared";
 import { COMMENT_TEXT_MAX_LENGTH } from "@brainstorm/shared";
 import { ArrowLeft, Download } from "lucide-react";
+import { AnimatePresence } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import { useMediaQuery } from "../hooks/useMediaQuery";
@@ -51,12 +52,6 @@ type Props = {
 
 type SortOption = 'popular' | 'newest' | 'oldest' | 'my-hearts' | 'alphabetical';
 
-type ComposerPresence = {
-  id: string;
-  isExiting: boolean;
-  mode: ComposerMode;
-};
-
 type ComposerMode =
   | {
       kind: "idea";
@@ -67,10 +62,6 @@ type ComposerMode =
       key: string;
       ideaId: string;
     };
-
-function sameComposerMode(left: ComposerMode | null, right: ComposerMode | null): boolean {
-  return left?.kind === right?.kind && left?.key === right?.key;
-}
 
 function composerModeId(mode: ComposerMode): string {
   return `${mode.kind}:${mode.key}`;
@@ -99,10 +90,6 @@ export default function AppShell(props: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [sortBy, setSortBy] = useState<SortOption>('popular');
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
-  const initialComposerMode = props.canAddIdeas ? { kind: "idea" as const, key: props.room.slug } : null;
-  const [composerPresences, setComposerPresences] = useState<ComposerPresence[]>(() =>
-    initialComposerMode ? [{ id: composerModeId(initialComposerMode), isExiting: false, mode: initialComposerMode }] : []
-  );
 
   useEffect(() => {
     setSidebarOpen(!isMobile);
@@ -125,23 +112,6 @@ export default function AppShell(props: Props) {
     }
     return props.canAddIdeas ? { kind: "idea", key: props.room.slug } : null;
   }, [props.canAddIdeas, props.canComment, props.room.slug, selectedIdea]);
-
-  useEffect(() => {
-    setComposerPresences((current) => {
-      const desiredId = desiredComposerMode ? composerModeId(desiredComposerMode) : null;
-      const hasDesired = desiredId ? current.some((presence) => presence.id === desiredId) : false;
-      const next = current.map((presence) => ({
-        ...presence,
-        isExiting: presence.id !== desiredId
-      }));
-
-      if (desiredComposerMode && desiredId && !hasDesired) {
-        next.push({ id: desiredId, isExiting: false, mode: desiredComposerMode });
-      }
-
-      return next;
-    });
-  }, [desiredComposerMode]);
 
   function toggleSidebar() {
     setSidebarOpen((open) => !open);
@@ -218,29 +188,15 @@ export default function AppShell(props: Props) {
     updateWithViewTransition(() => setSelectedIdeaId(null));
   }
 
-  useEffect(() => {
-    if (!composerPresences.some((presence) => presence.isExiting)) return;
-    const timeout = window.setTimeout(() => {
-      setComposerPresences((current) => current.filter((presence) => !presence.isExiting));
-    }, 320);
-    return () => window.clearTimeout(timeout);
-  }, [composerPresences]);
-
-  function handleComposerAnimationEnd(id: string) {
-    setComposerPresences((current) => current.filter((presence) => presence.id !== id || !presence.isExiting));
-  }
-
-  function renderComposer(presence: ComposerPresence) {
-    if (presence.mode.kind === "comment") {
-      const ideaId = presence.mode.ideaId;
+  function renderComposer(mode: ComposerMode) {
+    if (mode.kind === "comment") {
+      const ideaId = mode.ideaId;
       return (
         <IdeaComposer
-          key={presence.id}
-          isExiting={presence.isExiting}
+          key={composerModeId(mode)}
           maxLength={COMMENT_TEXT_MAX_LENGTH}
           placeholder="Add a comment"
           ariaLabel="Submit comment"
-          onAnimationEnd={() => handleComposerAnimationEnd(presence.id)}
           onSubmit={(text) => props.onCreateComment(ideaId, text)}
         />
       );
@@ -248,9 +204,7 @@ export default function AppShell(props: Props) {
 
     return (
       <IdeaComposer
-        key={presence.id}
-        isExiting={presence.isExiting}
-        onAnimationEnd={() => handleComposerAnimationEnd(presence.id)}
+        key={composerModeId(mode)}
         onSubmit={props.onCreateIdea}
       />
     );
@@ -354,7 +308,9 @@ export default function AppShell(props: Props) {
                 </>
               )}
             </div>
-            {composerPresences.map(renderComposer)}
+            <AnimatePresence mode="wait">
+              {desiredComposerMode ? renderComposer(desiredComposerMode) : null}
+            </AnimatePresence>
           </div>
         </main>
         <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />

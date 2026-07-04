@@ -1,5 +1,7 @@
 import { X } from "lucide-react";
+import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { easeStandard, modalBackdropVariants, modalPanelVariants } from "../lib/animations";
 
 type Props = {
   roomTitle: string;
@@ -9,7 +11,6 @@ type Props = {
 };
 
 export default function DeleteRoomModal({ roomTitle, ideaCount, onClose, onConfirm }: Props) {
-  const [closing, setClosing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -17,9 +18,8 @@ export default function DeleteRoomModal({ roomTitle, ideaCount, onClose, onConfi
   useEffect(() => confirmRef.current?.focus(), []);
 
   function close() {
-    if (closing || deleting) return;
-    setClosing(true);
-    window.setTimeout(onClose, 150);
+    if (deleting) return;
+    onClose();
   }
 
   async function confirm() {
@@ -35,12 +35,23 @@ export default function DeleteRoomModal({ roomTitle, ideaCount, onClose, onConfi
   }
 
   return (
-    <div className={`modal-backdrop ${closing ? "closing" : ""}`} role="presentation" onMouseDown={close}>
-      <div
+    <motion.div
+      className="modal-backdrop"
+      role="presentation"
+      variants={modalBackdropVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.15, ease: easeStandard }}
+      onMouseDown={close}
+    >
+      <motion.div
         className="edit-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Delete room"
+        variants={modalPanelVariants}
+        transition={{ duration: 0.15, ease: easeStandard }}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal-head">
@@ -63,7 +74,7 @@ export default function DeleteRoomModal({ roomTitle, ideaCount, onClose, onConfi
             {deleting ? "Deleting..." : "Delete room"}
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

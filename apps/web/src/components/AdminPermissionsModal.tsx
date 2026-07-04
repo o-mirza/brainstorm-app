@@ -1,6 +1,8 @@
 import type { ParticipantPermissions } from "@brainstorm/shared";
 import { X, Loader2, AlertCircle, Shield, Users } from "lucide-react";
+import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
+import { easeStandard, modalBackdropVariants, modalPanelVariants } from "../lib/animations";
 import CopyLinkButton from "./CopyLinkButton";
 
 type PermissionKey = keyof ParticipantPermissions;
@@ -28,7 +30,6 @@ type Props = {
 };
 
 export default function AdminPermissionsModal({ adminUrl, permissions, onClose, onUpdatePermissions }: Props) {
-  const [closing, setClosing] = useState(false);
   const [pendingKey, setPendingKey] = useState<PermissionKey | null>(null);
   const [errorKey, setErrorKey] = useState<PermissionKey | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,9 +38,8 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
   useEffect(() => closeRef.current?.focus(), []);
 
   function close() {
-    if (closing || pendingKey) return;
-    setClosing(true);
-    window.setTimeout(onClose, 150);
+    if (pendingKey) return;
+    onClose();
   }
 
   async function togglePermission(key: PermissionKey) {
@@ -59,12 +59,23 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
   }
 
   return (
-    <div className={`modal-backdrop ${closing ? "closing" : ""}`} role="presentation" onMouseDown={close}>
-      <div
+    <motion.div
+      className="modal-backdrop"
+      role="presentation"
+      variants={modalBackdropVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.15, ease: easeStandard }}
+      onMouseDown={close}
+    >
+      <motion.div
         className="edit-modal permissions-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Admin permissions"
+        variants={modalPanelVariants}
+        transition={{ duration: 0.15, ease: easeStandard }}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal-head">
@@ -129,7 +140,7 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
             })}
           </div>
         </section>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

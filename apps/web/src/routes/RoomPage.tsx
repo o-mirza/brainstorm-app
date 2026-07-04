@@ -1,4 +1,5 @@
 import type { Comment, Idea, ParticipantPermissions } from "@brainstorm/shared";
+import { AnimatePresence } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AdminPermissionsModal from "../components/AdminPermissionsModal";
@@ -213,7 +214,9 @@ export default function RoomPage() {
             Recent rooms
           </button>
         </main>
-        {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+        <AnimatePresence>
+          {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+        </AnimatePresence>
       </>
     );
   }
@@ -235,7 +238,9 @@ export default function RoomPage() {
             Recent rooms
           </button>
         </main>
-        {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+        <AnimatePresence>
+          {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+        </AnimatePresence>
       </>
     );
   }
@@ -292,27 +297,31 @@ export default function RoomPage() {
         onUpdateIdea={updateIdea}
         onDeleteIdea={deleteIdea}
       />
-      {shareOverlayOpen ? <ShareOverlay roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
-      {aiSummaryOpen ? (
-        <AISummaryModal roomSlug={roomSlug} onClose={() => setAISummaryOpen(false)} onGenerate={generateAISummary} />
-      ) : null}
-      {permissionsOpen && adminUrl ? (
-        <AdminPermissionsModal
-          adminUrl={adminUrl}
-          permissions={roomState.room.participantPermissions}
-          onClose={() => setPermissionsOpen(false)}
-          onUpdatePermissions={updateParticipantPermissions}
-        />
-      ) : null}
-      {recentOpen ? <RecentRoomsDialog rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
-      {deleteOpen ? (
-        <DeleteRoomModal
-          roomTitle={roomState.room.title}
-          ideaCount={roomState.ideas.length}
-          onClose={() => setDeleteOpen(false)}
-          onConfirm={deleteRoom}
-        />
-      ) : null}
+      <AnimatePresence>
+        {shareOverlayOpen ? <ShareOverlay key="share" roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
+        {aiSummaryOpen ? (
+          <AISummaryModal key="ai-summary" roomSlug={roomSlug} onClose={() => setAISummaryOpen(false)} onGenerate={generateAISummary} />
+        ) : null}
+        {permissionsOpen && adminUrl ? (
+          <AdminPermissionsModal
+            key="permissions"
+            adminUrl={adminUrl}
+            permissions={roomState.room.participantPermissions}
+            onClose={() => setPermissionsOpen(false)}
+            onUpdatePermissions={updateParticipantPermissions}
+          />
+        ) : null}
+        {recentOpen ? <RecentRoomsDialog key="recent" rooms={rooms} onClose={() => setRecentOpen(false)} /> : null}
+        {deleteOpen ? (
+          <DeleteRoomModal
+            key="delete"
+            roomTitle={roomState.room.title}
+            ideaCount={roomState.ideas.length}
+            onClose={() => setDeleteOpen(false)}
+            onConfirm={deleteRoom}
+          />
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }

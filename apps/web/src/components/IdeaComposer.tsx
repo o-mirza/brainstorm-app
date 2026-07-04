@@ -1,23 +1,21 @@
 import { SendHorizonal } from "lucide-react";
+import { motion } from "motion/react";
 import { useState } from "react";
-import type { AnimationEvent, FormEvent, KeyboardEvent } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import { IDEA_TEXT_MAX_LENGTH } from "@brainstorm/shared";
+import { composerVariants, easeStandard } from "../lib/animations";
 
 type Props = {
-  isExiting?: boolean;
   maxLength?: number;
   placeholder?: string;
   ariaLabel?: string;
-  onAnimationEnd?: () => void;
   onSubmit: (text: string) => Promise<void>;
 };
 
 export default function IdeaComposer({
-  isExiting = false,
   maxLength = IDEA_TEXT_MAX_LENGTH,
   placeholder = "Add an idea",
   ariaLabel = "Add an idea",
-  onAnimationEnd,
   onSubmit
 }: Props) {
   const [value, setValue] = useState("");
@@ -25,7 +23,7 @@ export default function IdeaComposer({
   const nearLimit = value.length > maxLength - 30;
 
   async function doSubmit() {
-    if (isExiting || !trimmed || value.length > maxLength) return;
+    if (!trimmed || value.length > maxLength) return;
     const submittedText = trimmed;
     setValue("");
     try {
@@ -46,28 +44,29 @@ export default function IdeaComposer({
     void doSubmit();
   }
 
-  function handleAnimationEnd(event: AnimationEvent<HTMLDivElement>) {
-    if (event.currentTarget !== event.target) return;
-    onAnimationEnd?.();
-  }
-
   return (
-    <div className={`composer-zone ${isExiting ? "is-exiting" : ""}`} onAnimationEnd={handleAnimationEnd}>
+    <motion.div
+      className="composer-zone"
+      variants={composerVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.24, ease: easeStandard }}
+    >
       <form className="composer" onSubmit={submit}>
         <input
           value={value}
           maxLength={maxLength}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={submitOnEnter}
-          disabled={isExiting}
           placeholder={placeholder}
           aria-label={ariaLabel}
         />
         {nearLimit ? <span className="char-count">{maxLength - value.length}</span> : null}
-        <button type="submit" disabled={isExiting || !trimmed} aria-label={ariaLabel}>
+        <button type="submit" disabled={!trimmed} aria-label={ariaLabel}>
           <SendHorizonal size={19} />
         </button>
       </form>
-    </div>
+    </motion.div>
   );
 }

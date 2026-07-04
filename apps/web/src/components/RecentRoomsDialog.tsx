@@ -1,24 +1,35 @@
 import type { RecentRoom } from "@brainstorm/shared";
 import { X } from "lucide-react";
-import { useState } from "react";
+import { motion } from "motion/react";
 import { useNavigate } from "react-router-dom";
+import { easeStandard, modalBackdropVariants, modalPanelVariants } from "../lib/animations";
 
 export default function RecentRoomsDialog({ rooms, onClose }: { rooms: RecentRoom[]; onClose: () => void }) {
   const navigate = useNavigate();
-  const [closing, setClosing] = useState(false);
-
-  function close() {
-    if (closing) return;
-    setClosing(true);
-    window.setTimeout(onClose, 150);
-  }
 
   return (
-    <div className={`modal-backdrop ${closing ? "closing" : ""}`} role="presentation" onMouseDown={close}>
-      <div className="recent-dialog" role="dialog" aria-modal="true" aria-label="Recent rooms" onMouseDown={(event) => event.stopPropagation()}>
+    <motion.div
+      className="modal-backdrop"
+      role="presentation"
+      variants={modalBackdropVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      transition={{ duration: 0.15, ease: easeStandard }}
+      onMouseDown={onClose}
+    >
+      <motion.div
+        className="recent-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Recent rooms"
+        variants={modalPanelVariants}
+        transition={{ duration: 0.15, ease: easeStandard }}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
         <div className="modal-head">
           <h2>Recent rooms</h2>
-          <button className="icon-button" type="button" onClick={close} aria-label="Close">
+          <button className="icon-button" type="button" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -30,7 +41,7 @@ export default function RecentRoomsDialog({ rooms, onClose }: { rooms: RecentRoo
                 key={room.roomSlug}
                 type="button"
                 onClick={() => {
-                  close();
+                  onClose();
                   navigate(`/r/${room.roomSlug}`);
                 }}
               >
@@ -40,7 +51,7 @@ export default function RecentRoomsDialog({ rooms, onClose }: { rooms: RecentRoo
             ))}
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
