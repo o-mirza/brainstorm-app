@@ -4,6 +4,7 @@ import websocket from "@fastify/websocket";
 import Fastify from "fastify";
 import { env } from "./env.js";
 import { db } from "./db/client.js";
+import { registerCommentRoutes } from "./modules/comments/comment.routes.js";
 import { registerIdeaRoutes } from "./modules/ideas/idea.routes.js";
 import { registerRoomRoutes } from "./modules/rooms/room.routes.js";
 import { RealtimeGateway } from "./modules/realtime/realtime.gateway.js";
@@ -25,6 +26,7 @@ export async function buildServer() {
 
   await registerRoomRoutes(app, realtime);
   await registerIdeaRoutes(app, realtime);
+  await registerCommentRoutes(app, realtime);
   await registerWebSocketRoutes(app, realtime);
 
   app.setErrorHandler((error, request, reply) => {

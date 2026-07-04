@@ -12,6 +12,7 @@ export const rooms = pgTable(
     participantCanEditIdeas: boolean("participant_can_edit_ideas").notNull().default(true),
     participantCanDeleteIdeas: boolean("participant_can_delete_ideas").notNull().default(true),
     participantCanHeartIdeas: boolean("participant_can_heart_ideas").notNull().default(true),
+    participantCanComment: boolean("participant_can_comment").notNull().default(true),
     participantCanRenameRoom: boolean("participant_can_rename_room").notNull().default(false),
     participantCanDeleteRoom: boolean("participant_can_delete_room").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -52,5 +53,27 @@ export const ideaHearts = pgTable(
     pk: primaryKey({ columns: [table.ideaId, table.participantId] }),
     ideaIdIdx: index("idea_hearts_idea_id_idx").on(table.ideaId),
     participantIdIdx: index("idea_hearts_participant_id_idx").on(table.participantId)
+  })
+);
+
+export const comments = pgTable(
+  "comments",
+  {
+    id: text("id").primaryKey(),
+    ideaId: text("idea_id")
+      .notNull()
+      .references(() => ideas.id, { onDelete: "cascade" }),
+    roomId: text("room_id")
+      .notNull()
+      .references(() => rooms.id, { onDelete: "cascade" }),
+    participantId: text("participant_id").notNull(),
+    text: text("text").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => ({
+    ideaCreatedAtIdx: index("comments_idea_created_at_idx").on(table.ideaId, table.createdAt),
+    roomIdIdx: index("comments_room_id_idx").on(table.roomId),
+    participantIdIdx: index("comments_participant_id_idx").on(table.participantId)
   })
 );

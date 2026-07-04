@@ -8,6 +8,7 @@ type Props = {
   onToggleHeart: (idea: Idea) => Promise<void>;
   onUpdate: (ideaId: string, text: string) => Promise<void>;
   onDelete: (ideaId: string) => Promise<void>;
+  onOpenComments: (ideaId: string) => void;
   canAdd: boolean;
   canHeart: boolean;
   canEdit: boolean;
@@ -171,6 +172,7 @@ export default function IdeaList(props: Props) {
           onToggleHeart={props.onToggleHeart}
           onUpdate={props.onUpdate}
           onDelete={props.onDelete}
+          onOpenComments={props.onOpenComments}
           canHeart={!exiting && props.canHeart}
           canEdit={!exiting && props.canEdit}
           canDelete={!exiting && props.canDelete}

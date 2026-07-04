@@ -16,6 +16,7 @@ type IdeaProjectionRow = {
   text: string;
   heart_count: string | number;
   hearted_by_me: boolean;
+  comment_count: string | number;
   created_at: Date;
   updated_at: Date;
 };
@@ -30,6 +31,7 @@ function mapRoom(row: RoomRow): Room {
       canEditIdeas: row.participantCanEditIdeas,
       canDeleteIdeas: row.participantCanDeleteIdeas,
       canHeartIdeas: row.participantCanHeartIdeas,
+      canComment: row.participantCanComment,
       canRenameRoom: row.participantCanRenameRoom,
       canDeleteRoom: row.participantCanDeleteRoom
     },
@@ -45,6 +47,7 @@ function mapIdea(row: IdeaProjectionRow): Idea {
     text: row.text,
     heartCount: Number(row.heart_count),
     heartedByMe: row.hearted_by_me,
+    commentCount: Number(row.comment_count),
     createdAt: toIso(row.created_at),
     updatedAt: toIso(row.updated_at)
   };
@@ -71,6 +74,7 @@ export async function createRoom(): Promise<{ room: Room; adminToken: string }> 
         participantCanEditIdeas: participantPermissions.canEditIdeas,
         participantCanDeleteIdeas: participantPermissions.canDeleteIdeas,
         participantCanHeartIdeas: participantPermissions.canHeartIdeas,
+        participantCanComment: participantPermissions.canComment,
         participantCanRenameRoom: participantPermissions.canRenameRoom,
         participantCanDeleteRoom: participantPermissions.canDeleteRoom,
         createdAt: new Date(),
@@ -109,15 +113,17 @@ export async function getIdeaProjection(ideaId: string, participantId: string): 
       i.id,
       i.room_id,
       i.text,
-      count(h.idea_id) as heart_count,
+      count(distinct h.participant_id) as heart_count,
       exists(
         select 1 from idea_hearts mine
         where mine.idea_id = i.id and mine.participant_id = ${participantId}
       ) as hearted_by_me,
+      count(distinct c.id) as comment_count,
       i.created_at,
       i.updated_at
     from ideas i
     left join idea_hearts h on h.idea_id = i.id
+    left join comments c on c.idea_id = i.id
     where i.id = ${ideaId}
     group by i.id
     limit 1
@@ -142,18 +148,20 @@ export async function getRoomSnapshot(
       i.id,
       i.room_id,
       i.text,
-      count(h.idea_id) as heart_count,
+      count(distinct h.participant_id) as heart_count,
       exists(
         select 1 from idea_hearts mine
         where mine.idea_id = i.id and mine.participant_id = ${participantId}
       ) as hearted_by_me,
+      count(distinct c.id) as comment_count,
       i.created_at,
       i.updated_at
     from ideas i
     left join idea_hearts h on h.idea_id = i.id
+    left join comments c on c.idea_id = i.id
     where i.room_id = ${roomRow.id}
     group by i.id
-    order by count(h.idea_id) desc, i.created_at asc
+    order by count(distinct h.participant_id) desc, i.created_at asc
   `);
 
   return {
@@ -182,6 +190,7 @@ export function assertParticipantPermission(
     canEditIdeas: room.participantCanEditIdeas,
     canDeleteIdeas: room.participantCanDeleteIdeas,
     canHeartIdeas: room.participantCanHeartIdeas,
+    canComment: room.participantCanComment,
     canRenameRoom: room.participantCanRenameRoom,
     canDeleteRoom: room.participantCanDeleteRoom
   }[permission];
@@ -235,6 +244,7 @@ export async function updateRoomPermissions(
       participantCanEditIdeas: participantPermissions.canEditIdeas,
       participantCanDeleteIdeas: participantPermissions.canDeleteIdeas,
       participantCanHeartIdeas: participantPermissions.canHeartIdeas,
+      participantCanComment: participantPermissions.canComment,
       participantCanRenameRoom: participantPermissions.canRenameRoom,
       participantCanDeleteRoom: participantPermissions.canDeleteRoom,
       updatedAt: new Date()

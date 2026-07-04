@@ -15,6 +15,7 @@ const PERMISSION_ROWS: PermissionRow[] = [
   { key: "canEditIdeas", label: "Edit ideas" },
   { key: "canDeleteIdeas", label: "Delete ideas" },
   { key: "canHeartIdeas", label: "Heart ideas" },
+  { key: "canComment", label: "Comment" },
   { key: "canRenameRoom", label: "Rename room" },
   { key: "canDeleteRoom", label: "Delete room" }
 ];

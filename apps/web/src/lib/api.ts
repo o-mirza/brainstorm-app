@@ -1,8 +1,12 @@
 import type {
+  Comment,
+  CreateCommentResponse,
   CreateIdeaResponse,
   CreateRoomResponse,
   DeleteRoomResponse,
+  DeleteCommentResponse,
   GenerateSummaryResponse,
+  GetCommentsResponse,
   GetRoomResponse,
   HeartIdeaResponse,
   AISummary,
@@ -12,6 +16,7 @@ import type {
   Room,
   RoomSnapshot,
   UnheartIdeaResponse,
+  UpdateCommentResponse,
   UpdateRoomPermissionsResponse,
   UpdateIdeaResponse
 } from "@brainstorm/shared";
@@ -107,6 +112,56 @@ export async function createIdea(
     body: JSON.stringify({ text, clientMutationId })
   });
   return data.idea;
+}
+
+export async function getComments(ideaId: string): Promise<Comment[]> {
+  const data = await request<GetCommentsResponse>(`/api/ideas/${ideaId}/comments`);
+  return data.comments;
+}
+
+export async function createComment(
+  ideaId: string,
+  participantId: string,
+  text: string,
+  clientMutationId?: string,
+  adminToken?: string
+): Promise<CreateCommentResponse> {
+  return request<CreateCommentResponse>(`/api/ideas/${ideaId}/comments`, {
+    method: "POST",
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) },
+    body: JSON.stringify({ text, clientMutationId })
+  });
+}
+
+export async function deleteComment(
+  commentId: string,
+  participantId: string,
+  clientMutationId?: string,
+  adminToken?: string
+): Promise<DeleteCommentResponse> {
+  return request<DeleteCommentResponse>(`/api/comments/${commentId}`, {
+    method: "DELETE",
+    headers: {
+      "x-participant-id": participantId,
+      ...(clientMutationId ? { "x-client-mutation-id": clientMutationId } : {}),
+      ...adminHeaders(adminToken)
+    }
+  });
+}
+
+export async function updateComment(
+  commentId: string,
+  participantId: string,
+  text: string,
+  clientMutationId?: string,
+  adminToken?: string
+): Promise<Comment> {
+  const data = await request<UpdateCommentResponse>(`/api/comments/${commentId}`, {
+    method: "PATCH",
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) },
+    body: JSON.stringify({ text, clientMutationId })
+  });
+  return data.comment;
 }
 
 export async function updateIdea(

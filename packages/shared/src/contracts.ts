@@ -1,4 +1,15 @@
-import type { Idea, IdeaDeleted, ParticipantPermissions, Room, RoomSnapshot, SharedIdea, SharedIdeaUpdate } from "./types.js";
+import type {
+  Comment,
+  CommentDeleted,
+  Idea,
+  IdeaDeleted,
+  ParticipantPermissions,
+  Room,
+  RoomSnapshot,
+  SharedComment,
+  SharedIdea,
+  SharedIdeaUpdate
+} from "./types.js";
 
 export type CreateRoomResponse = {
   room: Room;
@@ -79,6 +90,38 @@ export type UnheartIdeaResponse = {
   clientMutationId?: string;
 };
 
+export type GetCommentsResponse = {
+  comments: Comment[];
+};
+
+export type CreateCommentRequest = {
+  text: string;
+  clientMutationId?: string;
+};
+
+export type CreateCommentResponse = {
+  comment: Comment;
+  idea: Idea;
+  clientMutationId?: string;
+};
+
+export type UpdateCommentRequest = {
+  text: string;
+  clientMutationId?: string;
+};
+
+export type UpdateCommentResponse = {
+  comment: Comment;
+  clientMutationId?: string;
+};
+
+export type DeleteCommentResponse = {
+  ok: true;
+  commentId: string;
+  idea: Idea;
+  clientMutationId?: string;
+};
+
 export type ClientWsEvent =
   | {
       type: "room.subscribe";
@@ -120,6 +163,23 @@ export type ServerWsEvent =
   | {
       type: "idea.deleted";
       idea: IdeaDeleted;
+      clientMutationId?: string;
+    }
+  | {
+      type: "comment.created";
+      comment: SharedComment;
+      idea: SharedIdeaUpdate;
+      clientMutationId?: string;
+    }
+  | {
+      type: "comment.updated";
+      comment: SharedComment;
+      clientMutationId?: string;
+    }
+  | {
+      type: "comment.deleted";
+      comment: CommentDeleted;
+      idea: SharedIdeaUpdate;
       clientMutationId?: string;
     }
   | {

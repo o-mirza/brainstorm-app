@@ -3,6 +3,7 @@ export type ParticipantPermissions = {
   canEditIdeas: boolean;
   canDeleteIdeas: boolean;
   canHeartIdeas: boolean;
+  canComment: boolean;
   canRenameRoom: boolean;
   canDeleteRoom: boolean;
 };
@@ -13,6 +14,7 @@ export function defaultParticipantPermissions(): ParticipantPermissions {
     canEditIdeas: true,
     canDeleteIdeas: true,
     canHeartIdeas: true,
+    canComment: true,
     canRenameRoom: false,
     canDeleteRoom: false
   };
@@ -33,6 +35,7 @@ export type Idea = {
   text: string;
   heartCount: number;
   heartedByMe: boolean;
+  commentCount: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -44,11 +47,30 @@ export type SharedIdeaUpdate = {
   roomId: string;
   text?: string;
   heartCount?: number;
+  commentCount?: number;
   updatedAt: string;
 };
 
 export type IdeaDeleted = {
   id: string;
+  roomId: string;
+};
+
+export type Comment = {
+  id: string;
+  ideaId: string;
+  roomId: string;
+  participantId: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SharedComment = Comment;
+
+export type CommentDeleted = {
+  id: string;
+  ideaId: string;
   roomId: string;
 };
 

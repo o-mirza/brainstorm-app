@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { IDEA_TEXT_MAX_LENGTH } from "@brainstorm/shared";
 
 type Props = {
@@ -32,9 +33,22 @@ export default function TextEditModal({ title, initialValue, onClose, onSave }: 
     close();
   }
 
-  return (
-    <div className={`modal-backdrop ${closing ? "closing" : ""}`} role="presentation" onMouseDown={close}>
-      <form className="edit-modal" role="dialog" aria-modal="true" aria-label={title} onSubmit={submit} onMouseDown={(event) => event.stopPropagation()}>
+  const modal = (
+    <div
+      className={`modal-backdrop ${closing ? "closing" : ""}`}
+      role="presentation"
+      onMouseDown={close}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <form
+        className="edit-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onSubmit={submit}
+        onMouseDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="modal-head">
           <h2>{title}</h2>
           <button className="icon-button" type="button" onClick={close} aria-label="Close">
@@ -62,4 +76,6 @@ export default function TextEditModal({ title, initialValue, onClose, onSave }: 
       </form>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

@@ -1,4 +1,4 @@
-import type { Idea, ParticipantPermissions, Room, RoomSnapshot, ServerWsEvent } from "@brainstorm/shared";
+import type { Comment, Idea, ParticipantPermissions, Room, RoomSnapshot, ServerWsEvent } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "../lib/api";
 import { createClientMutationId } from "../lib/ids";
@@ -10,8 +10,17 @@ export type ClientIdea = Idea & {
   clientMutationId?: string;
 };
 
+export type ClientComment = Comment & {
+  renderKey: string;
+  clientMutationId?: string;
+};
+
 function withRenderKey(idea: Idea, renderKey = idea.id): ClientIdea {
   return { ...idea, renderKey };
+}
+
+function withCommentRenderKey(comment: Comment, renderKey = comment.id): ClientComment {
+  return { ...comment, renderKey };
 }
 
 function makeOptimisticIdea(
@@ -28,6 +37,27 @@ function makeOptimisticIdea(
     text,
     heartCount: 1,
     heartedByMe: true,
+    commentCount: 0,
+    createdAt,
+    updatedAt: createdAt
+  };
+}
+
+function makeOptimisticComment(
+  idea: Idea,
+  participantId: string,
+  text: string,
+  clientMutationId: string,
+  createdAt = new Date().toISOString()
+): ClientComment {
+  return {
+    id: `optimistic_${crypto.randomUUID()}`,
+    renderKey: `local_${clientMutationId}`,
+    clientMutationId,
+    ideaId: idea.id,
+    roomId: idea.roomId,
+    participantId,
+    text,
     createdAt,
     updatedAt: createdAt
   };
@@ -36,6 +66,7 @@ function makeOptimisticIdea(
 export function useRoom(roomSlug: string, participantId: string, adminToken?: string) {
   const [room, setRoom] = useState<Room | null>(null);
   const [ideas, setIdeas] = useState<ClientIdea[]>([]);
+  const [commentsByIdea, setCommentsByIdea] = useState<Record<string, ClientComment[]>>({});
   const [participantCount, setParticipantCount] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>("loading");
@@ -51,6 +82,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
     deletedRef.current = false;
     setRoom(null);
     setIdeas([]);
+    setCommentsByIdea({});
     setParticipantCount(0);
     setIsAdmin(false);
     setLoadState("loading");
@@ -75,6 +107,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
     deletedRef.current = true;
     setRoom(null);
     setIdeas([]);
+    setCommentsByIdea({});
     setParticipantCount(0);
     setIsAdmin(false);
     setLoadState("deleted");
@@ -172,9 +205,72 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
       if (event.type === "idea.deleted") {
         if (event.clientMutationId && appliedMutationIdsRef.current.has(event.clientMutationId)) return;
         setIdeas((current) => current.filter((idea) => idea.id !== event.idea.id));
+        setCommentsByIdea((current) => {
+          const { [event.idea.id]: _deletedComments, ...next } = current;
+          return next;
+        });
+        return;
+      }
+
+      if (event.type === "comment.created") {
+        if (event.clientMutationId && appliedMutationIdsRef.current.has(event.clientMutationId)) return;
+        setIdeas((current) => sortIdeas(current.map((idea) => (idea.id === event.idea.id ? { ...idea, ...event.idea } : idea))));
+        setCommentsByIdea((current) => {
+          const comments = current[event.comment.ideaId];
+          if (!comments) return current;
+          if (comments.some((comment) => comment.id === event.comment.id)) return current;
+          const optimisticComment = event.clientMutationId
+            ? comments.find((comment) => comment.clientMutationId === event.clientMutationId)
+            : undefined;
+          if (optimisticComment && event.clientMutationId) {
+            appliedMutationIdsRef.current.add(event.clientMutationId);
+            const nextComment = withCommentRenderKey(event.comment, optimisticComment.renderKey);
+            nextComment.clientMutationId = event.clientMutationId;
+            return {
+              ...current,
+              [event.comment.ideaId]: comments
+                .filter((comment) => comment.renderKey !== optimisticComment.renderKey)
+                .concat(nextComment)
+                .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+            };
+          }
+          return {
+            ...current,
+            [event.comment.ideaId]: [...comments, withCommentRenderKey(event.comment)].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+          };
+        });
+        return;
+      }
+
+      if (event.type === "comment.updated") {
+        if (event.clientMutationId && appliedMutationIdsRef.current.has(event.clientMutationId)) return;
+        setCommentsByIdea((current) => {
+          const comments = current[event.comment.ideaId];
+          if (!comments) return current;
+          return {
+            ...current,
+            [event.comment.ideaId]: comments.map((comment) =>
+              comment.id === event.comment.id ? { ...comment, ...event.comment } : comment
+            )
+          };
+        });
+        return;
+      }
+
+      if (event.type === "comment.deleted") {
+        if (event.clientMutationId && appliedMutationIdsRef.current.has(event.clientMutationId)) return;
+        setIdeas((current) => sortIdeas(current.map((idea) => (idea.id === event.idea.id ? { ...idea, ...event.idea } : idea))));
+        setCommentsByIdea((current) => {
+          const comments = current[event.comment.ideaId];
+          if (!comments) return current;
+          return {
+            ...current,
+            [event.comment.ideaId]: comments.filter((comment) => comment.id !== event.comment.id)
+          };
+        });
       }
     },
-    [applyDeleted, applySnapshot, fetchSnapshot, participantId, roomSlug]
+    [adminToken, applyDeleted, applySnapshot, fetchSnapshot, participantId, roomSlug]
   );
 
   const replaceIdea = useCallback((nextIdea: Idea, clientMutationId?: string) => {
@@ -187,6 +283,33 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
         nextClientIdea.clientMutationId = clientMutationId;
       }
       return sortIdeas([nextClientIdea, ...current.filter((idea) => idea.renderKey !== nextClientIdea.renderKey && idea.id !== nextIdea.id)]);
+    });
+  }, []);
+
+  const patchIdea = useCallback((ideaUpdate: Partial<Idea> & { id: string }) => {
+    setIdeas((current) => sortIdeas(current.map((idea) => (idea.id === ideaUpdate.id ? { ...idea, ...ideaUpdate } : idea))));
+  }, []);
+
+  const replaceComment = useCallback((nextComment: Comment, clientMutationId?: string) => {
+    if (clientMutationId && appliedMutationIdsRef.current.has(clientMutationId)) return;
+    if (clientMutationId) appliedMutationIdsRef.current.add(clientMutationId);
+    setCommentsByIdea((current) => {
+      const comments = current[nextComment.ideaId];
+      if (!comments) return current;
+      const previous = comments.find((comment) => comment.id === nextComment.id || (clientMutationId && comment.clientMutationId === clientMutationId));
+      const nextClientComment = withCommentRenderKey(nextComment, previous?.renderKey);
+      if (clientMutationId) {
+        nextClientComment.clientMutationId = clientMutationId;
+      }
+      return {
+        ...current,
+        [nextComment.ideaId]: [
+          ...comments
+            .filter((comment) => comment.renderKey !== nextClientComment.renderKey && comment.id !== nextComment.id)
+            .concat(nextClientComment)
+            .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+        ]
+      };
     });
   }, []);
 
@@ -234,6 +357,90 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
         } catch (permissionsError) {
           if (previousRoom) setRoom(previousRoom);
           throw permissionsError;
+        }
+      },
+      loadComments: async (ideaId: string) => {
+        const comments = await api.getComments(ideaId);
+        setCommentsByIdea((current) => ({
+          ...current,
+          [ideaId]: comments.map((comment) => withCommentRenderKey(comment))
+        }));
+        return comments;
+      },
+      createComment: async (ideaId: string, text: string) => {
+        const idea = ideas.find((currentIdea) => currentIdea.id === ideaId);
+        if (!idea) {
+          throw new Error("Idea does not exist.");
+        }
+        const clientMutationId = createClientMutationId();
+        const optimisticComment = makeOptimisticComment(idea, participantId, text, clientMutationId);
+        setCommentsByIdea((current) => ({
+          ...current,
+          [ideaId]: [...(current[ideaId] ?? []), optimisticComment]
+        }));
+        patchIdea({ id: ideaId, commentCount: idea.commentCount + 1, updatedAt: new Date().toISOString() });
+        try {
+          const result = await api.createComment(ideaId, participantId, text, clientMutationId, adminToken);
+          replaceComment(result.comment, clientMutationId);
+          replaceIdea(result.idea);
+          return result.comment;
+        } catch (createError) {
+          setCommentsByIdea((current) => ({
+            ...current,
+            [ideaId]: (current[ideaId] ?? []).filter((comment) => comment.renderKey !== optimisticComment.renderKey)
+          }));
+          replaceIdea(idea);
+          throw createError;
+        }
+      },
+      updateComment: async (commentId: string, text: string) => {
+        const comment = Object.values(commentsByIdea).flat().find((currentComment) => currentComment.id === commentId);
+        if (!comment) {
+          throw new Error("Comment does not exist.");
+        }
+        const clientMutationId = createClientMutationId();
+        const nextComment = { ...comment, text, updatedAt: new Date().toISOString() };
+        replaceComment(nextComment);
+        try {
+          const updated = await api.updateComment(commentId, participantId, text, clientMutationId, adminToken);
+          replaceComment(updated, clientMutationId);
+          return updated;
+        } catch (updateError) {
+          replaceComment(comment);
+          throw updateError;
+        }
+      },
+      deleteComment: async (comment: Comment) => {
+        const idea = ideas.find((currentIdea) => currentIdea.id === comment.ideaId);
+        const clientMutationId = createClientMutationId();
+        const previousComments = commentsByIdea[comment.ideaId];
+        if (comment.id.startsWith("optimistic_")) {
+          setCommentsByIdea((current) => ({
+            ...current,
+            [comment.ideaId]: (current[comment.ideaId] ?? []).filter((currentComment) => currentComment.id !== comment.id)
+          }));
+          if (idea) {
+            patchIdea({ id: idea.id, commentCount: Math.max(0, idea.commentCount - 1), updatedAt: new Date().toISOString() });
+          }
+          return;
+        }
+        setCommentsByIdea((current) => ({
+          ...current,
+          [comment.ideaId]: (current[comment.ideaId] ?? []).filter((currentComment) => currentComment.id !== comment.id)
+        }));
+        if (idea) {
+          patchIdea({ id: idea.id, commentCount: Math.max(0, idea.commentCount - 1), updatedAt: new Date().toISOString() });
+        }
+        try {
+          const result = await api.deleteComment(comment.id, participantId, clientMutationId, adminToken);
+          appliedMutationIdsRef.current.add(clientMutationId);
+          replaceIdea(result.idea);
+        } catch (deleteError) {
+          if (previousComments) {
+            setCommentsByIdea((current) => ({ ...current, [comment.ideaId]: previousComments }));
+          }
+          if (idea) replaceIdea(idea);
+          throw deleteError;
         }
       },
       createIdea: async (text: string) => {
@@ -358,12 +565,26 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
         }
       }
     }),
-    [adminToken, applyDeleted, fetchSnapshot, ideas, participantId, replaceIdea, replaceOptimisticIdea, room, roomSlug]
+    [
+      adminToken,
+      applyDeleted,
+      commentsByIdea,
+      fetchSnapshot,
+      ideas,
+      participantId,
+      patchIdea,
+      replaceComment,
+      replaceIdea,
+      replaceOptimisticIdea,
+      room,
+      roomSlug
+    ]
   );
 
   return {
     room,
     ideas,
+    commentsByIdea,
     participantCount,
     isAdmin,
     loadState,

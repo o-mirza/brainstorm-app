@@ -11,6 +11,7 @@ export const updateRoomPermissionsRequestSchema = z.object({
     canEditIdeas: z.boolean(),
     canDeleteIdeas: z.boolean(),
     canHeartIdeas: z.boolean(),
+    canComment: z.boolean(),
     canRenameRoom: z.boolean(),
     canDeleteRoom: z.boolean()
   })

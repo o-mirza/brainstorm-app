@@ -1,4 +1,4 @@
-import type { Idea, ParticipantPermissions } from "@brainstorm/shared";
+import type { Comment, Idea, ParticipantPermissions } from "@brainstorm/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AdminPermissionsModal from "../components/AdminPermissionsModal";
@@ -79,6 +79,7 @@ export default function RoomPage() {
   const canEditIdeas = roomState.isAdmin || Boolean(participantPermissions?.canEditIdeas);
   const canDeleteIdeas = roomState.isAdmin || Boolean(participantPermissions?.canDeleteIdeas);
   const canHeartIdeas = roomState.isAdmin || Boolean(participantPermissions?.canHeartIdeas);
+  const canComment = roomState.isAdmin || (participantPermissions?.canComment ?? true);
   const canRenameRoom = roomState.isAdmin || Boolean(participantPermissions?.canRenameRoom);
   const canDeleteRoom = roomState.isAdmin || Boolean(participantPermissions?.canDeleteRoom);
 
@@ -141,6 +142,35 @@ export default function RoomPage() {
     } catch (heartError) {
       toast.error(idea.heartedByMe ? "Could not remove heart" : "Could not heart idea");
       throw heartError;
+    }
+  }
+
+  async function createComment(ideaId: string, text: string) {
+    try {
+      await roomState.actions.createComment(ideaId, text);
+    } catch (commentError) {
+      toast.error("Could not create comment");
+      throw commentError;
+    }
+  }
+
+  async function updateComment(commentId: string, text: string) {
+    try {
+      await roomState.actions.updateComment(commentId, text);
+    } catch (updateError) {
+      toast.error("Could not save comment");
+      throw updateError;
+    }
+  }
+
+  async function deleteComment(comment: Comment) {
+    try {
+      const deletePromise = roomState.actions.deleteComment(comment);
+      toast.success("Comment deleted");
+      await deletePromise;
+    } catch (deleteError) {
+      toast.error("Could not delete comment");
+      throw deleteError;
     }
   }
 
@@ -224,12 +254,15 @@ export default function RoomPage() {
       <AppShell
         room={roomState.room}
         ideas={roomState.ideas}
+        commentsByIdea={roomState.commentsByIdea}
         roomUrl={roomUrl}
+        participantId={participantId}
         isAdmin={roomState.isAdmin}
         canAddIdeas={canAddIdeas}
         canEditIdeas={canEditIdeas}
         canDeleteIdeas={canDeleteIdeas}
         canHeartIdeas={canHeartIdeas}
+        canComment={canComment}
         canRenameRoom={canRenameRoom}
         canDeleteRoom={canDeleteRoom}
         participantCount={roomState.participantCount}
@@ -251,6 +284,10 @@ export default function RoomPage() {
             throw createError;
           }
         }}
+        onLoadComments={roomState.actions.loadComments}
+        onCreateComment={createComment}
+        onUpdateComment={updateComment}
+        onDeleteComment={deleteComment}
         onToggleHeart={toggleHeart}
         onUpdateIdea={updateIdea}
         onDeleteIdea={deleteIdea}

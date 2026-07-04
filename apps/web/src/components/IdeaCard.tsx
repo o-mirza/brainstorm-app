@@ -1,6 +1,7 @@
 import type { Idea } from "@brainstorm/shared";
-import { Clipboard, Heart, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { Clipboard, Heart, MessageSquare, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { forwardRef, useEffect, useRef, useState } from "react";
+import type { CSSProperties, KeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
 import TextEditModal from "./TextEditModal";
 import { useToast } from "./ToastProvider";
 
@@ -9,12 +10,16 @@ type Props = {
   onToggleHeart: (idea: Idea) => Promise<void>;
   onUpdate: (ideaId: string, text: string) => Promise<void>;
   onDelete: (ideaId: string) => Promise<void>;
+  onOpenComments: (ideaId: string) => void;
   canHeart: boolean;
   canEdit: boolean;
   canDelete: boolean;
 };
 
-const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, onToggleHeart, onUpdate, onDelete, canHeart, canEdit, canDelete }, ref) {
+const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
+  { idea, onToggleHeart, onUpdate, onDelete, onOpenComments, canHeart, canEdit, canDelete },
+  ref
+) {
   const toast = useToast();
   const [menuOpen, setMenuOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -53,9 +58,37 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, onTogg
     }
   }
 
+  function openComments() {
+    onOpenComments(idea.id);
+  }
+
+  function openCommentsFromKeyboard(event: KeyboardEvent<HTMLElement>) {
+    if (event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openComments();
+  }
+
+  function stopCardClick(event: ReactMouseEvent<HTMLElement>) {
+    event.stopPropagation();
+  }
+
+  const transitionStyle = {
+    viewTransitionName: `idea-card-${idea.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`
+  } as CSSProperties;
+
   return (
-    <article ref={ref} className={`idea-card ${menuOpen ? "menu-open" : ""}`}>
-      <div className="vote-column">
+    <article
+      ref={ref}
+      className={`idea-card ${menuOpen ? "menu-open" : ""}`}
+      style={transitionStyle}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open comments for idea: ${idea.text}`}
+      onClick={openComments}
+      onKeyDown={openCommentsFromKeyboard}
+    >
+      <div className="vote-column" onClick={stopCardClick}>
         {canHeart ? (
           <button
             className={`vote-button ${pulsing ? "pulse" : ""}`}
@@ -77,7 +110,16 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard({ idea, onTogg
       <div className="idea-content">
         <p className="idea-text">{idea.text}</p>
       </div>
-      <div className="idea-actions" ref={menuRef}>
+      <div className="idea-actions" ref={menuRef} onClick={stopCardClick}>
+        <button
+          className="idea-comment-button"
+          type="button"
+          aria-label={`${idea.commentCount} ${idea.commentCount === 1 ? "comment" : "comments"}`}
+          onClick={openComments}
+        >
+          <MessageSquare size={18} />
+          <span>{idea.commentCount}</span>
+        </button>
         <button className="idea-menu-button" type="button" aria-label="Idea actions" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
           <MoreVertical size={19} />
         </button>

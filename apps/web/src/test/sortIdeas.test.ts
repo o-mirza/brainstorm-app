@@ -9,6 +9,7 @@ function idea(id: string, heartCount: number, createdAt: string): Idea {
     text: id,
     heartCount,
     heartedByMe: false,
+    commentCount: 0,
     createdAt,
     updatedAt: createdAt
   };
