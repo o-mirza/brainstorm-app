@@ -1,7 +1,9 @@
 import type { RecentRoom } from "@brainstorm/shared";
 import { Download, Expand, History, Moon, Plus, ShieldCheck, Sparkles, Sun, Trash2 } from "lucide-react";
+import { motion } from "motion/react";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "../hooks/useTheme";
+import { easeOverlay } from "../lib/animations";
 import CopyLinkButton from "./CopyLinkButton";
 
 type Props = {
@@ -47,13 +49,20 @@ export default function Sidebar({
       </div>
       <div className="room-access-panel">
         <button className="join-code-wrap join-code-button" type="button" onClick={onOpenShareOverlay} aria-label="Expand sharing view">
-          <QRCodeSVG
-            value={roomUrl}
-            size={242}
-            bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
-            fgColor={theme === "dark" ? "#f3f4f6" : "#5d626b"}
-            className="join-code-graphic"
-          />
+          <motion.div
+            className="join-code-frame"
+            layoutId="share-room-qr"
+            transition={{ layout: { duration: 0.2, ease: easeOverlay } }}
+          >
+            <div className="join-code-graphic">
+              <QRCodeSVG
+                value={roomUrl}
+                size={242}
+                bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
+                fgColor={theme === "dark" ? "#f3f4f6" : "#5d626b"}
+              />
+            </div>
+          </motion.div>
         </button>
         <div className="room-url-box">
           <span className="room-url-text">{roomUrl}</span>

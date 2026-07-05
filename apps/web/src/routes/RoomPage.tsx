@@ -1,5 +1,5 @@
 import type { Comment, Idea, ParticipantPermissions } from "@brainstorm/shared";
-import { AnimatePresence } from "motion/react";
+import { AnimatePresence, LayoutGroup } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import AdminPermissionsModal from "../components/AdminPermissionsModal";
@@ -286,7 +286,7 @@ export default function RoomPage() {
   }
 
   return (
-    <>
+    <LayoutGroup id="share-qr">
       <AppShell
         room={roomState.room}
         ideas={roomState.ideas}
@@ -374,6 +374,6 @@ export default function RoomPage() {
           />
         ) : null}
       </AnimatePresence>
-    </>
+    </LayoutGroup>
   );
 }
