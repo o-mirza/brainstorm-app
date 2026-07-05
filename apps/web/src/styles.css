@@ -2037,7 +2037,6 @@ button {
 
 @media (max-width: 520px) {
   .modal-backdrop {
-    align-items: start;
     padding: 10px;
   }
 
