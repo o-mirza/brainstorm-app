@@ -21,12 +21,12 @@ export function defaultParticipantPermissions(): ParticipantPermissions {
     canAddIdeas: true,
     canHeartIdeas: true,
     canViewHeartCounts: true,
-    ideaManagement: "anyone",
+    ideaManagement: "own",
     canExportData: true,
     canViewComments: true,
     canAddComments: true,
     commentManagement: "own",
-    canGenerateSummary: false,
+    canGenerateSummary: true,
     canRenameRoom: false,
     canDeleteRoom: false
   };

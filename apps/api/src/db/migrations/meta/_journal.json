@@ -64,6 +64,13 @@
       "when": 1783238700000,
       "tag": "0008_export_data_permission",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783238800000,
+      "tag": "0009_update_permission_defaults",
+      "breakpoints": true
     }
   ]
 }
