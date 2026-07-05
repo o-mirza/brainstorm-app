@@ -127,10 +127,16 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
             {canShowHeartCount ? <span className="vote-count">{idea.heartCount}</span> : null}
           </button>
         ) : (
-          <div className="vote-control vote-count-static" aria-label={canShowHeartCount ? `${idea.heartCount} hearts` : "Hearts hidden"}>
+          <button
+            className="vote-control vote-button vote-button-disabled"
+            type="button"
+            disabled
+            title="You do not have permission to heart ideas"
+            aria-label={canShowHeartCount ? `Hearting disabled. ${idea.heartCount} hearts` : "Hearting disabled. Heart counts hidden"}
+          >
             <Heart />
             {canShowHeartCount ? <span className="vote-count">{idea.heartCount}</span> : null}
-          </div>
+          </button>
         )}
       </div>
       <div className="idea-content">

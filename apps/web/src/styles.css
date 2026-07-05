@@ -517,13 +517,22 @@ button {
   cursor: pointer;
 }
 
-.vote-count-static {
-  cursor: default;
-}
-
-.vote-button:hover,
+.vote-button:not(:disabled):hover,
 .vote-button[aria-pressed="true"] {
   color: var(--heart);
+}
+
+.vote-button-disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+.vote-button-disabled svg {
+  opacity: 0.56;
+}
+
+.vote-button-disabled .vote-count {
+  opacity: 0.9;
 }
 
 .vote-button[aria-pressed="true"] svg {
