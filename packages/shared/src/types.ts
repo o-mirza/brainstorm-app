@@ -6,7 +6,7 @@ export type ParticipantPermissions = {
   canHeartIdeas: boolean;
   canViewHeartCounts: boolean;
   ideaManagement: ManagementPermission;
-  canExportIdeas: boolean;
+  canExportData: boolean;
   canViewComments: boolean;
   canAddComments: boolean;
   commentManagement: ManagementPermission;
@@ -22,7 +22,7 @@ export function defaultParticipantPermissions(): ParticipantPermissions {
     canHeartIdeas: true,
     canViewHeartCounts: true,
     ideaManagement: "anyone",
-    canExportIdeas: true,
+    canExportData: true,
     canViewComments: true,
     canAddComments: true,
     commentManagement: "own",
@@ -101,6 +101,18 @@ export type RecentRoom = {
   title: string;
   ideaCount?: number;
   lastVisitedAt: string;
+};
+
+export type RoomExportRow = {
+  ideaId: string;
+  ideaText: string;
+  heartCount: number;
+  ideaCreatedAt: string;
+  ideaUpdatedAt: string;
+  commentId: string | null;
+  commentText: string | null;
+  commentCreatedAt: string | null;
+  commentUpdatedAt: string | null;
 };
 
 export type ApiError = {

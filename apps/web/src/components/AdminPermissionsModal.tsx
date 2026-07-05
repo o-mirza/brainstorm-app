@@ -41,7 +41,7 @@ const PERMISSION_GROUPS: PermissionRow[][] = [
     { kind: "level", key: "commentManagement", label: "Manage comments" }
   ],
   [
-    { kind: "toggle", key: "canExportIdeas", label: "Export ideas" },
+    { kind: "toggle", key: "canExportData", label: "Export data" },
     { kind: "toggle", key: "canGenerateSummary", label: "Generate AI summary" },
     { kind: "toggle", key: "canRenameRoom", label: "Rename room" },
     { kind: "toggle", key: "canDeleteRoom", label: "Delete room" }

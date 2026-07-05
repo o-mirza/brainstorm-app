@@ -197,7 +197,6 @@ button {
 .link-box:focus-within,
 .room-url-box:focus-within,
 .composer:focus-within,
-.export-csv-button:focus-visible,
 .idea-menu-button:focus-visible,
 .vote-button:focus-visible {
   outline: 2px solid var(--focus-outline);
@@ -362,23 +361,6 @@ button {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
-}
-
-.export-csv-button {
-  display: inline-grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  cursor: pointer;
-  transition: color 0.15s ease, background-color 0.15s ease;
-}
-
-.export-csv-button:hover {
-  background-color: var(--surface-2);
-  color: var(--ink);
 }
 
 .sort-select-wrapper {
@@ -1443,6 +1425,21 @@ button {
   padding: 0 10px;
   font-size: 16px;
   outline: 0;
+}
+
+.export-modal-copy {
+  margin: 0;
+  color: var(--ink);
+  line-height: 1.45;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .modal-actions {

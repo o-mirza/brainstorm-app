@@ -1,6 +1,7 @@
 import type {
   CreateRoomResponse,
   DeleteRoomResponse,
+  ExportRoomDataResponse,
   GenerateSummaryResponse,
   GetRoomResponse,
   RenameRoomRequest,
@@ -14,7 +15,16 @@ import { makeError } from "../../shared/http.js";
 import { parseParticipantHeader, roomSlugSchema } from "../../shared/validation.js";
 import type { RealtimeGateway } from "../realtime/realtime.gateway.js";
 import { generateAISummary } from "./ai-summary.service.js";
-import { assertParticipantPermission, createRoom, deleteRoom, getRoomRowBySlug, getRoomSnapshot, renameRoom, updateRoomPermissions } from "./room.service.js";
+import {
+  assertParticipantPermission,
+  createRoom,
+  deleteRoom,
+  getRoomExportData,
+  getRoomRowBySlug,
+  getRoomSnapshot,
+  renameRoom,
+  updateRoomPermissions
+} from "./room.service.js";
 import { renameRoomRequestSchema, updateRoomPermissionsRequestSchema } from "./room.schemas.js";
 
 function asBadRequest(error: unknown): Error {
@@ -43,6 +53,22 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
       throw asBadRequest(error);
     }
   });
+
+  app.get<{ Params: { roomSlug: string }; Querystring: { includeComments?: string } }>(
+    "/api/rooms/:roomSlug/export",
+    async (request): Promise<ExportRoomDataResponse> => {
+      try {
+        const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
+        const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+        const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+        const includeComments = request.query.includeComments === "true";
+        const rows = await getRoomExportData(roomSlug, participantId, includeComments, adminToken);
+        return { rows };
+      } catch (error) {
+        throw asBadRequest(error);
+      }
+    }
+  );
 
   app.patch<{ Params: { roomSlug: string }; Body: RenameRoomRequest }>(
     "/api/rooms/:roomSlug",

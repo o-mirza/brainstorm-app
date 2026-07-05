@@ -14,7 +14,7 @@ export const updateRoomPermissionsRequestSchema = z.object({
     canHeartIdeas: z.boolean(),
     canViewHeartCounts: z.boolean(),
     ideaManagement: managementPermissionSchema,
-    canExportIdeas: z.boolean(),
+    canExportData: z.boolean(),
     canViewComments: z.boolean(),
     canAddComments: z.boolean(),
     commentManagement: managementPermissionSchema,

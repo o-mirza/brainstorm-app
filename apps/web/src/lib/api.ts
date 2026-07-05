@@ -5,6 +5,7 @@ import type {
   CreateRoomResponse,
   DeleteRoomResponse,
   DeleteCommentResponse,
+  ExportRoomDataResponse,
   GenerateSummaryResponse,
   GetCommentsResponse,
   GetRoomResponse,
@@ -14,6 +15,7 @@ import type {
   ParticipantPermissions,
   RenameRoomResponse,
   Room,
+  RoomExportRow,
   RoomSnapshot,
   UnheartIdeaResponse,
   UpdateCommentResponse,
@@ -61,6 +63,19 @@ export async function getRoomSnapshot(roomSlug: string, participantId: string, a
   return request<GetRoomResponse>(`/api/rooms/${roomSlug}`, {
     headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) }
   });
+}
+
+export async function getRoomExportData(
+  roomSlug: string,
+  participantId: string,
+  includeComments: boolean,
+  adminToken?: string
+): Promise<RoomExportRow[]> {
+  const params = new URLSearchParams({ includeComments: String(includeComments) });
+  const data = await request<ExportRoomDataResponse>(`/api/rooms/${roomSlug}/export?${params}`, {
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) }
+  });
+  return data.rows;
 }
 
 export async function renameRoom(roomSlug: string, title: string, adminToken?: string): Promise<Room> {

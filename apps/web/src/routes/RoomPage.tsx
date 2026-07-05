@@ -6,6 +6,7 @@ import AdminPermissionsModal from "../components/AdminPermissionsModal";
 import AISummaryModal from "../components/AISummaryModal";
 import AppShell from "../components/AppShell";
 import DeleteRoomModal from "../components/DeleteRoomModal";
+import ExportDataModal from "../components/ExportDataModal";
 import RecentRoomsDialog from "../components/RecentRoomsDialog";
 import ShareOverlay from "../components/ShareOverlay";
 import { useToast } from "../components/ToastProvider";
@@ -14,8 +15,9 @@ import { useRecentRooms } from "../hooks/useRecentRooms";
 import { useRoom } from "../hooks/useRoom";
 import { useRoomRealtime } from "../hooks/useRoomRealtime";
 import { getAdminTokenFromSearch, getStoredRoomAdminToken, removeAdminTokenFromAddressBar, storeRoomAdminToken } from "../lib/adminAccess";
-import { createRoom, generateAISummary } from "../lib/api";
+import { createRoom, generateAISummary, getRoomExportData } from "../lib/api";
 import { getAdminRoomUrl, getRoomUrl } from "../lib/roomUrl";
+import { downloadIdeasCsv } from "../lib/ideasCsv";
 
 export default function RoomPage() {
   const params = useParams();
@@ -31,6 +33,7 @@ export default function RoomPage() {
   const [shareOverlayOpen, setShareOverlayOpen] = useState(false);
   const [permissionsOpen, setPermissionsOpen] = useState(false);
   const [aiSummaryOpen, setAISummaryOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [recentOpen, setRecentOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const createdRoom = Boolean((location.state as { createdRoom?: boolean } | null)?.createdRoom);
@@ -57,6 +60,7 @@ export default function RoomPage() {
       setShareOverlayOpen(false);
       setPermissionsOpen(false);
       setAISummaryOpen(false);
+      setExportOpen(false);
       setDeleteOpen(false);
     }
   }, [removeRoom, roomSlug, roomState.loadState]);
@@ -88,7 +92,7 @@ export default function RoomPage() {
   const commentManagement = participantPermissions?.commentManagement ?? "none";
   const canManageOwnComments = roomState.isAdmin || commentManagement === "own" || commentManagement === "anyone";
   const canManageAnyComments = roomState.isAdmin || commentManagement === "anyone";
-  const canExportIdeas = roomState.isAdmin || (participantPermissions?.canExportIdeas ?? true);
+  const canExportData = roomState.isAdmin || (participantPermissions?.canExportData ?? true);
   const canGenerateSummary = roomState.isAdmin || Boolean(participantPermissions?.canGenerateSummary);
   const canRenameRoom = roomState.isAdmin || Boolean(participantPermissions?.canRenameRoom);
   const canDeleteRoom = roomState.isAdmin || Boolean(participantPermissions?.canDeleteRoom);
@@ -104,6 +108,12 @@ export default function RoomPage() {
       setDeleteOpen(false);
     }
   }, [canDeleteRoom]);
+
+  useEffect(() => {
+    if (!canExportData) {
+      setExportOpen(false);
+    }
+  }, [canExportData]);
 
   async function createNewRoom() {
     try {
@@ -199,6 +209,18 @@ export default function RoomPage() {
     await roomState.actions.updatePermissions(permissions);
   }
 
+  async function exportData(includeComments: boolean) {
+    try {
+      const rows = await getRoomExportData(roomSlug, participantId, includeComments, adminToken);
+      downloadIdeasCsv(roomSlug, rows, includeComments);
+      setExportOpen(false);
+      toast.success("CSV exported");
+    } catch (exportError) {
+      toast.error("Could not export data");
+      throw exportError;
+    }
+  }
+
   if (roomState.loadState === "loading") {
     return (
       <main className="route-state route-state-pending">
@@ -282,7 +304,7 @@ export default function RoomPage() {
         canAddComments={canAddComments}
         canManageOwnComments={canManageOwnComments}
         canManageAnyComments={canManageAnyComments}
-        canExportIdeas={canExportIdeas}
+        canExportData={canExportData}
         canGenerateSummary={canGenerateSummary}
         canRenameRoom={canRenameRoom}
         canDeleteRoom={canDeleteRoom}
@@ -295,6 +317,7 @@ export default function RoomPage() {
         onShowRecent={() => setRecentOpen(true)}
         onOpenShareOverlay={() => setShareOverlayOpen(true)}
         onShowAISummary={() => setAISummaryOpen(true)}
+        onShowExportData={() => setExportOpen(true)}
         onShowPermissions={() => setPermissionsOpen(true)}
         onDeleteRoom={() => setDeleteOpen(true)}
         onCreateIdea={async (text) => {
@@ -321,6 +344,14 @@ export default function RoomPage() {
             roomSlug={roomSlug}
             onClose={() => setAISummaryOpen(false)}
             onGenerate={(slug) => generateAISummary(slug, participantId, adminToken)}
+          />
+        ) : null}
+        {exportOpen ? (
+          <ExportDataModal
+            key="export"
+            canViewComments={canViewComments}
+            onClose={() => setExportOpen(false)}
+            onExport={exportData}
           />
         ) : null}
         {permissionsOpen && adminUrl ? (

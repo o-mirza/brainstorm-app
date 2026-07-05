@@ -1,4 +1,4 @@
-import type { Idea, ManagementPermission, ParticipantPermissions, Room, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
+import type { Idea, ManagementPermission, ParticipantPermissions, Room, RoomExportRow, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
 import { defaultParticipantPermissions } from "@brainstorm/shared";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db/client.js";
@@ -23,6 +23,18 @@ type IdeaProjectionRow = {
   updated_at: Date;
 };
 
+type ExportProjectionRow = {
+  idea_id: string;
+  idea_text: string;
+  heart_count: string | number;
+  idea_created_at: Date;
+  idea_updated_at: Date;
+  comment_id: string | null;
+  comment_text: string | null;
+  comment_created_at: Date | null;
+  comment_updated_at: Date | null;
+};
+
 function mapRoom(row: RoomRow): Room {
   return {
     id: row.id,
@@ -34,7 +46,7 @@ function mapRoom(row: RoomRow): Room {
       canHeartIdeas: row.participantCanHeartIdeas,
       canViewHeartCounts: row.participantCanViewHeartCounts,
       ideaManagement: row.participantIdeaManagement,
-      canExportIdeas: row.participantCanExportIdeas,
+      canExportData: row.participantCanExportData,
       canViewComments: row.participantCanViewComments,
       canAddComments: row.participantCanAddComments,
       commentManagement: row.participantCommentManagement,
@@ -98,7 +110,7 @@ export async function createRoom(): Promise<{ room: Room; adminToken: string }> 
         participantCanHeartIdeas: participantPermissions.canHeartIdeas,
         participantCanViewHeartCounts: participantPermissions.canViewHeartCounts,
         participantIdeaManagement: participantPermissions.ideaManagement,
-        participantCanExportIdeas: participantPermissions.canExportIdeas,
+        participantCanExportData: participantPermissions.canExportData,
         participantCanViewComments: participantPermissions.canViewComments,
         participantCanAddComments: participantPermissions.canAddComments,
         participantCommentManagement: participantPermissions.commentManagement,
@@ -227,7 +239,7 @@ export function assertParticipantPermission(
     canAddIdeas: room.participantCanAddIdeas,
     canHeartIdeas: room.participantCanHeartIdeas,
     canViewHeartCounts: room.participantCanViewHeartCounts,
-    canExportIdeas: room.participantCanExportIdeas,
+    canExportData: room.participantCanExportData,
     canViewComments: room.participantCanViewComments,
     canAddComments: room.participantCanAddComments,
     canGenerateSummary: room.participantCanGenerateSummary,
@@ -254,6 +266,74 @@ export async function renameRoom(roomSlug: string, title: string, adminToken?: s
     throw makeError("room_not_found", "Room does not exist.", 404);
   }
   return mapRoom(room);
+}
+
+function mapExportRow(row: ExportProjectionRow): RoomExportRow {
+  return {
+    ideaId: row.idea_id,
+    ideaText: row.idea_text,
+    heartCount: Number(row.heart_count),
+    ideaCreatedAt: toIso(row.idea_created_at),
+    ideaUpdatedAt: toIso(row.idea_updated_at),
+    commentId: row.comment_id,
+    commentText: row.comment_text,
+    commentCreatedAt: row.comment_created_at ? toIso(row.comment_created_at) : null,
+    commentUpdatedAt: row.comment_updated_at ? toIso(row.comment_updated_at) : null
+  };
+}
+
+export async function getRoomExportData(
+  roomSlug: string,
+  participantId: string,
+  includeComments: boolean,
+  adminToken?: string
+): Promise<RoomExportRow[]> {
+  const roomRow = await getRoomRowBySlug(roomSlug);
+  assertParticipantPermission(roomRow, adminToken, "canExportData");
+  if (includeComments) {
+    assertParticipantPermission(roomRow, adminToken, "canViewComments");
+  }
+
+  const rows = includeComments
+    ? await db.execute<ExportProjectionRow>(sql`
+        select
+          i.id as idea_id,
+          i.text as idea_text,
+          count(distinct h.participant_id) as heart_count,
+          i.created_at as idea_created_at,
+          i.updated_at as idea_updated_at,
+          c.id as comment_id,
+          c.text as comment_text,
+          c.created_at as comment_created_at,
+          c.updated_at as comment_updated_at
+        from ideas i
+        left join idea_hearts h on h.idea_id = i.id
+        left join comments c on c.idea_id = i.id
+        where i.room_id = ${roomRow.id}
+          and (${isRoomAdmin(roomRow, adminToken)} or ${roomRow.participantCanViewIdeas} or i.participant_id = ${participantId})
+        group by i.id, c.id
+        order by count(distinct h.participant_id) desc, i.created_at asc, c.created_at asc
+      `)
+    : await db.execute<ExportProjectionRow>(sql`
+        select
+          i.id as idea_id,
+          i.text as idea_text,
+          count(distinct h.participant_id) as heart_count,
+          i.created_at as idea_created_at,
+          i.updated_at as idea_updated_at,
+          null::text as comment_id,
+          null::text as comment_text,
+          null::timestamptz as comment_created_at,
+          null::timestamptz as comment_updated_at
+        from ideas i
+        left join idea_hearts h on h.idea_id = i.id
+        where i.room_id = ${roomRow.id}
+          and (${isRoomAdmin(roomRow, adminToken)} or ${roomRow.participantCanViewIdeas} or i.participant_id = ${participantId})
+        group by i.id
+        order by count(distinct h.participant_id) desc, i.created_at asc
+      `);
+
+  return rows.map(mapExportRow);
 }
 
 export async function deleteRoom(roomSlug: string, adminToken?: string): Promise<void> {
@@ -285,7 +365,7 @@ export async function updateRoomPermissions(
       participantCanHeartIdeas: participantPermissions.canHeartIdeas,
       participantCanViewHeartCounts: participantPermissions.canViewHeartCounts,
       participantIdeaManagement: participantPermissions.ideaManagement,
-      participantCanExportIdeas: participantPermissions.canExportIdeas,
+      participantCanExportData: participantPermissions.canExportData,
       participantCanViewComments: participantPermissions.canViewComments,
       participantCanAddComments: participantPermissions.canAddComments,
       participantCommentManagement: participantPermissions.commentManagement,

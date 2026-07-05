@@ -15,7 +15,7 @@ export const rooms = pgTable(
     participantCanHeartIdeas: boolean("participant_can_heart_ideas").notNull().default(true),
     participantCanViewHeartCounts: boolean("participant_can_view_heart_counts").notNull().default(true),
     participantIdeaManagement: text("participant_idea_management").$type<ManagementPermission>().notNull().default("anyone"),
-    participantCanExportIdeas: boolean("participant_can_export_ideas").notNull().default(true),
+    participantCanExportData: boolean("participant_can_export_data").notNull().default(true),
     participantCanViewComments: boolean("participant_can_view_comments").notNull().default(true),
     participantCanAddComments: boolean("participant_can_add_comments").notNull().default(true),
     participantCommentManagement: text("participant_comment_management").$type<ManagementPermission>().notNull().default("own"),

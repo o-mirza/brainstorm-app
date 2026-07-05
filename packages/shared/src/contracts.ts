@@ -5,6 +5,7 @@ import type {
   IdeaDeleted,
   ParticipantPermissions,
   Room,
+  RoomExportRow,
   RoomSnapshot,
   SharedComment,
   SharedIdea,
@@ -17,6 +18,10 @@ export type CreateRoomResponse = {
 };
 
 export type GetRoomResponse = RoomSnapshot;
+
+export type ExportRoomDataResponse = {
+  rows: RoomExportRow[];
+};
 
 export type RenameRoomRequest = {
   title: string;

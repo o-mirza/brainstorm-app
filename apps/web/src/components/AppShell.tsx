@@ -1,12 +1,11 @@
 import type { Comment, Idea, RecentRoom, Room, SortOption } from "@brainstorm/shared";
 import { COMMENT_TEXT_MAX_LENGTH } from "@brainstorm/shared";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import type { ClientComment, ClientIdea } from "../hooks/useRoom";
-import { downloadIdeasCsv } from "../lib/ideasCsv";
 import type { ConnectionStatus as Status } from "../lib/types";
 import CommentThread from "./CommentThread";
 import IdeaCard from "./IdeaCard";
@@ -32,7 +31,7 @@ type Props = {
   canAddComments: boolean;
   canManageOwnComments: boolean;
   canManageAnyComments: boolean;
-  canExportIdeas: boolean;
+  canExportData: boolean;
   canGenerateSummary: boolean;
   canRenameRoom: boolean;
   canDeleteRoom: boolean;
@@ -45,6 +44,7 @@ type Props = {
   onShowRecent: () => void;
   onOpenShareOverlay: () => void;
   onShowAISummary: () => void;
+  onShowExportData: () => void;
   onShowPermissions: () => void;
   onDeleteRoom: () => void;
   onCreateIdea: (text: string) => Promise<void>;
@@ -135,12 +135,14 @@ export default function AppShell(props: Props) {
         roomUrl={props.roomUrl}
         isAdmin={props.isAdmin}
         canDeleteRoom={props.canDeleteRoom}
+        canExportData={props.canExportData}
         canGenerateSummary={props.canGenerateSummary}
         recentRooms={props.recentRooms}
         onCreateRoom={() => handleSidebarAction(props.onCreateRoom)}
         onShowRecent={() => handleSidebarAction(props.onShowRecent)}
         onOpenShareOverlay={() => handleSidebarAction(props.onOpenShareOverlay)}
         onShowAISummary={() => handleSidebarAction(props.onShowAISummary)}
+        onShowExportData={() => handleSidebarAction(props.onShowExportData)}
         onShowPermissions={() => handleSidebarAction(props.onShowPermissions)}
         onDeleteRoom={() => handleSidebarAction(props.onDeleteRoom)}
       />
@@ -184,11 +186,6 @@ export default function AppShell(props: Props) {
       case 'alphabetical': return 'A-Z';
     }
   };
-
-  function exportIdeasCsv() {
-    if (!props.canExportIdeas) return;
-    downloadIdeasCsv(props.room.slug, sortedIdeas);
-  }
 
   function openComments(ideaId: string) {
     updateWithViewTransition(() => setSelectedIdeaId(ideaId));
@@ -277,17 +274,6 @@ export default function AppShell(props: Props) {
                         {props.canViewIdeas ? props.ideas.length : `Your ${props.ideas.length}`} {props.ideas.length === 1 ? "idea" : "ideas"}
                       </div>
                       <div className="ideas-actions">
-                        {props.canExportIdeas ? (
-                          <button
-                            type="button"
-                            className="export-csv-button"
-                            onClick={exportIdeasCsv}
-                            aria-label="Export ideas as CSV"
-                            title="Export ideas as CSV"
-                          >
-                            <Download size={16} aria-hidden="true" />
-                          </button>
-                        ) : null}
                         <div className="ideas-sort">
                           <label htmlFor="sort-select" className="sr-only">Sort by</label>
                           <div className="sort-select-wrapper">
