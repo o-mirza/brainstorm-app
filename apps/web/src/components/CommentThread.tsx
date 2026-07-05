@@ -12,7 +12,8 @@ type Props = {
   ideaId: string;
   comments: ClientComment[] | undefined;
   participantId: string;
-  isAdmin: boolean;
+  canManageOwn: boolean;
+  canManageAny: boolean;
   onLoad: (ideaId: string) => Promise<Comment[]>;
   onUpdate: (commentId: string, text: string) => Promise<void>;
   onDelete: (comment: Comment) => Promise<void>;
@@ -35,7 +36,16 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-export default function CommentThread({ ideaId, comments, participantId, isAdmin, onLoad, onUpdate, onDelete }: Props) {
+export default function CommentThread({
+  ideaId,
+  comments,
+  participantId,
+  canManageOwn,
+  canManageAny,
+  onLoad,
+  onUpdate,
+  onDelete
+}: Props) {
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -96,7 +106,7 @@ export default function CommentThread({ ideaId, comments, participantId, isAdmin
       <section className={`comments-section ${comments.length === 0 ? "is-empty" : ""}`} aria-label="Comments">
         <AnimatePresence initial={false} mode="popLayout">
           {comments.map((comment) => {
-            const canManage = isAdmin || comment.participantId === participantId;
+            const canManage = canManageAny || (canManageOwn && comment.participantId === participantId);
             const menuOpen = openMenuId === comment.id;
             return (
               <motion.article

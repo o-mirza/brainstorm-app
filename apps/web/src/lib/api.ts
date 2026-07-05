@@ -92,9 +92,10 @@ export async function updateRoomPermissions(
   return data.room;
 }
 
-export async function generateAISummary(roomSlug: string): Promise<AISummary> {
+export async function generateAISummary(roomSlug: string, participantId: string, adminToken?: string): Promise<AISummary> {
   const data = await request<GenerateSummaryResponse>(`/api/rooms/${roomSlug}/ai-summary`, {
-    method: "POST"
+    method: "POST",
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) }
   });
   return data.summary;
 }
@@ -114,8 +115,10 @@ export async function createIdea(
   return data.idea;
 }
 
-export async function getComments(ideaId: string): Promise<Comment[]> {
-  const data = await request<GetCommentsResponse>(`/api/ideas/${ideaId}/comments`);
+export async function getComments(ideaId: string, participantId: string, adminToken?: string): Promise<Comment[]> {
+  const data = await request<GetCommentsResponse>(`/api/ideas/${ideaId}/comments`, {
+    headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) }
+  });
   return data.comments;
 }
 

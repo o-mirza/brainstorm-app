@@ -1,4 +1,4 @@
-import type { ParticipantPermissions } from "@brainstorm/shared";
+import type { ManagementPermission, ParticipantPermissions } from "@brainstorm/shared";
 import { X, Loader2, AlertCircle, Shield, Users } from "lucide-react";
 import { motion } from "motion/react";
 import { useEffect, useRef, useState } from "react";
@@ -6,20 +6,52 @@ import { easeStandard, modalBackdropVariants, modalPanelVariants } from "../lib/
 import CopyLinkButton from "./CopyLinkButton";
 
 type PermissionKey = keyof ParticipantPermissions;
+type TogglePermissionKey = {
+  [Key in PermissionKey]: ParticipantPermissions[Key] extends boolean ? Key : never;
+}[PermissionKey];
+type ManagementPermissionKey = {
+  [Key in PermissionKey]: ParticipantPermissions[Key] extends ManagementPermission ? Key : never;
+}[PermissionKey];
 
-type PermissionRow = {
-  key: PermissionKey;
-  label: string;
-};
+type PermissionRow =
+  | {
+      kind: "toggle";
+      key: TogglePermissionKey;
+      label: string;
+    }
+  | {
+      kind: "level";
+      key: ManagementPermissionKey;
+      label: string;
+    };
 
-const PERMISSION_ROWS: PermissionRow[] = [
-  { key: "canAddIdeas", label: "Add ideas" },
-  { key: "canEditIdeas", label: "Edit ideas" },
-  { key: "canDeleteIdeas", label: "Delete ideas" },
-  { key: "canHeartIdeas", label: "Heart ideas" },
-  { key: "canComment", label: "Comment" },
-  { key: "canRenameRoom", label: "Rename room" },
-  { key: "canDeleteRoom", label: "Delete room" }
+const PERMISSION_GROUPS: PermissionRow[][] = [
+  [
+    { kind: "toggle", key: "canViewIdeas", label: "View others' ideas" },
+    { kind: "toggle", key: "canAddIdeas", label: "Add ideas" },
+    { kind: "level", key: "ideaManagement", label: "Manage ideas" }
+  ],
+  [
+    { kind: "toggle", key: "canHeartIdeas", label: "Heart ideas" },
+    { kind: "toggle", key: "canViewHeartCounts", label: "View heart counts" }
+  ],
+  [
+    { kind: "toggle", key: "canViewComments", label: "View comments" },
+    { kind: "toggle", key: "canAddComments", label: "Add comments" },
+    { kind: "level", key: "commentManagement", label: "Manage comments" }
+  ],
+  [
+    { kind: "toggle", key: "canExportIdeas", label: "Export ideas" },
+    { kind: "toggle", key: "canGenerateSummary", label: "Generate AI summary" },
+    { kind: "toggle", key: "canRenameRoom", label: "Rename room" },
+    { kind: "toggle", key: "canDeleteRoom", label: "Delete room" }
+  ]
+];
+
+const MANAGEMENT_LEVELS: { value: ManagementPermission; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "own", label: "Own" },
+  { value: "anyone", label: "Anyone" }
 ];
 
 type Props = {
@@ -42,9 +74,8 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
     onClose();
   }
 
-  async function togglePermission(key: PermissionKey) {
+  async function updatePermissions(key: PermissionKey, nextPermissions: ParticipantPermissions) {
     if (pendingKey) return;
-    const nextPermissions = { ...permissions, [key]: !permissions[key] };
     setPendingKey(key);
     setErrorKey(null);
     setError(null);
@@ -56,6 +87,89 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
     } finally {
       setPendingKey(null);
     }
+  }
+
+  async function togglePermission(key: TogglePermissionKey) {
+    await updatePermissions(key, { ...permissions, [key]: !permissions[key] });
+  }
+
+  async function setManagementPermission(key: ManagementPermissionKey, value: ManagementPermission) {
+    if (permissions[key] === value) return;
+    await updatePermissions(key, { ...permissions, [key]: value });
+  }
+
+  function renderRows(rows: PermissionRow[]) {
+    return rows.map((row) => {
+      const isPending = pendingKey === row.key;
+      const isError = errorKey === row.key;
+      const isCommentDependent =
+        !permissions.canViewComments &&
+        (row.key === "canAddComments" || row.key === "commentManagement");
+      const status = (
+        <>
+          {isPending ? (
+            <span className="permission-status loading">
+              <Loader2 size={10} className="spinner" /> Saving...
+            </span>
+          ) : null}
+          {isError && error ? (
+            <span className="permission-status error">
+              <AlertCircle size={10} /> {error}
+            </span>
+          ) : null}
+        </>
+      );
+
+      if (row.kind === "level") {
+        return (
+          <div
+            className={`permission-item permission-item-level ${isCommentDependent ? "is-muted" : ""} ${isPending ? "is-pending" : ""} ${isError ? "has-error" : ""}`}
+            key={row.key}
+          >
+            <div className="permission-info">
+              <strong className="permission-label">{row.label}</strong>
+              {status}
+            </div>
+            <div className="permission-level-control" aria-label={row.label}>
+              {MANAGEMENT_LEVELS.map((level) => (
+                <button
+                  type="button"
+                  key={level.value}
+                  className={permissions[row.key] === level.value ? "active" : ""}
+                  aria-pressed={permissions[row.key] === level.value}
+                  disabled={Boolean(pendingKey)}
+                  onClick={() => void setManagementPermission(row.key, level.value)}
+                >
+                  {level.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div
+          className={`permission-item ${isCommentDependent ? "is-muted" : ""} ${isPending ? "is-pending" : ""} ${isError ? "has-error" : ""}`}
+          key={row.key}
+          onClick={() => !isPending && void togglePermission(row.key)}
+        >
+          <div className="permission-info">
+            <strong className="permission-label">{row.label}</strong>
+            {status}
+          </div>
+          <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={permissions[row.key]}
+              disabled={isPending}
+              onChange={() => void togglePermission(row.key)}
+            />
+            <span className="toggle-slider" />
+          </label>
+        </div>
+      );
+    });
   }
 
   return (
@@ -104,40 +218,11 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
           </div>
           <p>These settings apply to participants who join with the share link.</p>
           <div className="permissions-list">
-            {PERMISSION_ROWS.map((row) => {
-              const isPending = pendingKey === row.key;
-              const isError = errorKey === row.key;
-              return (
-                <div
-                  className={`permission-item ${isPending ? "is-pending" : ""} ${isError ? "has-error" : ""}`}
-                  key={row.key}
-                  onClick={() => !isPending && void togglePermission(row.key)}
-                >
-                  <div className="permission-info">
-                    <strong className="permission-label">{row.label}</strong>
-                    {isPending ? (
-                      <span className="permission-status loading">
-                        <Loader2 size={10} className="spinner" /> Saving...
-                      </span>
-                    ) : null}
-                    {isError && error ? (
-                      <span className="permission-status error">
-                        <AlertCircle size={10} /> {error}
-                      </span>
-                    ) : null}
-                  </div>
-                  <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={permissions[row.key]}
-                      disabled={isPending}
-                      onChange={() => void togglePermission(row.key)}
-                    />
-                    <span className="toggle-slider" />
-                  </label>
-                </div>
-              );
-            })}
+            {PERMISSION_GROUPS.map((group, index) => (
+              <div className="permissions-group" key={index}>
+                {renderRows(group)}
+              </div>
+            ))}
           </div>
         </section>
       </motion.div>

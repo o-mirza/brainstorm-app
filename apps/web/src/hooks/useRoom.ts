@@ -25,6 +25,7 @@ function withCommentRenderKey(comment: Comment, renderKey = comment.id): ClientC
 
 function makeOptimisticIdea(
   roomId: string,
+  participantId: string,
   text: string,
   clientMutationId: string,
   createdAt = new Date().toISOString()
@@ -34,6 +35,7 @@ function makeOptimisticIdea(
     renderKey: `local_${clientMutationId}`,
     clientMutationId,
     roomId,
+    participantId,
     text,
     heartCount: 1,
     heartedByMe: true,
@@ -77,6 +79,16 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
   const createHeartIntentsRef = useRef(new Map<string, boolean>());
   const deletedRef = useRef(false);
   const lastFetchIdRef = useRef(0);
+  const roomRef = useRef<Room | null>(null);
+  const isAdminRef = useRef(false);
+
+  useEffect(() => {
+    roomRef.current = room;
+  }, [room]);
+
+  useEffect(() => {
+    isAdminRef.current = isAdmin;
+  }, [isAdmin]);
 
   useEffect(() => {
     deletedRef.current = false;
@@ -138,6 +150,17 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
 
   const applyServerEvent = useCallback(
     (event: ServerWsEvent) => {
+      const currentRoom = roomRef.current;
+      const currentIsAdmin = isAdminRef.current;
+      const canViewIdeas = currentIsAdmin || (currentRoom?.participantPermissions.canViewIdeas ?? true);
+      const canViewHeartCounts = currentIsAdmin || (currentRoom?.participantPermissions.canViewHeartCounts ?? true);
+      const canViewComments = currentIsAdmin || (currentRoom?.participantPermissions.canViewComments ?? true);
+      const redactIdea = <T extends Idea>(idea: T): T => ({
+        ...idea,
+        heartCount: canViewHeartCounts ? idea.heartCount : 0,
+        commentCount: canViewComments ? idea.commentCount : 0
+      });
+
       if (event.type === "room.snapshot") {
         applySnapshot(event.snapshot, true);
         return;
@@ -163,6 +186,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
       if (event.type === "idea.created") {
         setIdeas((current) => {
           if (current.some((idea) => idea.id === event.idea.id)) return current;
+          if (!canViewIdeas && event.idea.participantId !== participantId) return current;
           if (event.clientMutationId) {
             if (canceledCreateMutationIdsRef.current.has(event.clientMutationId)) {
               appliedMutationIdsRef.current.add(event.clientMutationId);
@@ -175,7 +199,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
             const optimisticIdea = current.find((idea) => idea.clientMutationId === event.clientMutationId);
             if (optimisticIdea) {
               appliedMutationIdsRef.current.add(event.clientMutationId);
-              const nextClientIdea = withRenderKey({ ...event.idea, heartedByMe: optimisticIdea.heartedByMe }, optimisticIdea.renderKey);
+              const nextClientIdea = withRenderKey(redactIdea({ ...event.idea, heartedByMe: optimisticIdea.heartedByMe }), optimisticIdea.renderKey);
               nextClientIdea.clientMutationId = event.clientMutationId;
               return sortIdeas([
                 nextClientIdea,
@@ -184,7 +208,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
             }
             if (appliedMutationIdsRef.current.has(event.clientMutationId)) return current;
           }
-          return sortIdeas([...current, withRenderKey({ ...event.idea, heartedByMe: false })]);
+          return sortIdeas([...current, withRenderKey(redactIdea({ ...event.idea, heartedByMe: false }))]);
         });
         return;
       }
@@ -197,7 +221,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
             void fetchSnapshot();
             return current;
           }
-          return sortIdeas(current.map((idea) => (idea.id === event.idea.id ? { ...idea, ...event.idea } : idea)));
+          return sortIdeas(current.map((idea) => (idea.id === event.idea.id ? redactIdea({ ...idea, ...event.idea }) : idea)));
         });
         return;
       }
@@ -214,7 +238,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
 
       if (event.type === "comment.created") {
         if (event.clientMutationId && appliedMutationIdsRef.current.has(event.clientMutationId)) return;
-        setIdeas((current) => sortIdeas(current.map((idea) => (idea.id === event.idea.id ? { ...idea, ...event.idea } : idea))));
+        setIdeas((current) => sortIdeas(current.map((idea) => (idea.id === event.idea.id ? redactIdea({ ...idea, ...event.idea }) : idea))));
         setCommentsByIdea((current) => {
           const comments = current[event.comment.ideaId];
           if (!comments) return current;
@@ -259,7 +283,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
 
       if (event.type === "comment.deleted") {
         if (event.clientMutationId && appliedMutationIdsRef.current.has(event.clientMutationId)) return;
-        setIdeas((current) => sortIdeas(current.map((idea) => (idea.id === event.idea.id ? { ...idea, ...event.idea } : idea))));
+        setIdeas((current) => sortIdeas(current.map((idea) => (idea.id === event.idea.id ? redactIdea({ ...idea, ...event.idea }) : idea))));
         setCommentsByIdea((current) => {
           const comments = current[event.comment.ideaId];
           if (!comments) return current;
@@ -360,7 +384,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
         }
       },
       loadComments: async (ideaId: string) => {
-        const comments = await api.getComments(ideaId);
+        const comments = await api.getComments(ideaId, participantId, adminToken);
         setCommentsByIdea((current) => ({
           ...current,
           [ideaId]: comments.map((comment) => withCommentRenderKey(comment))
@@ -453,7 +477,7 @@ export function useRoom(roomSlug: string, participantId: string, adminToken?: st
             optimisticCreatedAt = new Date(nextTime).toISOString();
           }
         }
-        const optimisticIdea = room ? makeOptimisticIdea(room.id, text, clientMutationId, optimisticCreatedAt) : null;
+        const optimisticIdea = room ? makeOptimisticIdea(room.id, participantId, text, clientMutationId, optimisticCreatedAt) : null;
         if (optimisticIdea) {
           setIdeas((current) => sortIdeas([optimisticIdea, ...current]));
         }

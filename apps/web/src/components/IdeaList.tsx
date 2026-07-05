@@ -11,9 +11,13 @@ type Props = {
   onDelete: (ideaId: string) => Promise<void>;
   onOpenComments: (ideaId: string) => void;
   canAdd: boolean;
+  canViewIdeas: boolean;
   canHeart: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
+  canShowHeartCount: boolean;
+  canShowComments: boolean;
+  canManageOwn: boolean;
+  canManageAny: boolean;
+  participantId: string;
 };
 
 export default function IdeaList(props: Props) {
@@ -22,7 +26,7 @@ export default function IdeaList(props: Props) {
       <div className="empty">
         <div>
           <strong>No ideas yet</strong>
-          <span>{props.canAdd ? "Add the first one." : "Waiting for ideas."}</span>
+          <span>{props.canViewIdeas ? (props.canAdd ? "Add the first one." : "Waiting for ideas.") : "Only your submissions are visible here."}</span>
         </div>
       </div>
     );
@@ -48,8 +52,10 @@ export default function IdeaList(props: Props) {
               onDelete={props.onDelete}
               onOpenComments={props.onOpenComments}
               canHeart={props.canHeart}
-              canEdit={props.canEdit}
-              canDelete={props.canDelete}
+              canShowHeartCount={props.canShowHeartCount}
+              canShowComments={props.canShowComments}
+              canEdit={props.canManageAny || (props.canManageOwn && idea.participantId === props.participantId)}
+              canDelete={props.canManageAny || (props.canManageOwn && idea.participantId === props.participantId)}
             />
           </motion.div>
         ))}

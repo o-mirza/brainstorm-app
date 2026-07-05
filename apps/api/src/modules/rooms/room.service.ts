@@ -1,4 +1,4 @@
-import type { Idea, ParticipantPermissions, Room, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
+import type { Idea, ManagementPermission, ParticipantPermissions, Room, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
 import { defaultParticipantPermissions } from "@brainstorm/shared";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db/client.js";
@@ -9,10 +9,12 @@ import { createRoomTitle } from "./room.name.js";
 import { generateRoomSlug } from "./room.slug.js";
 
 type RoomRow = typeof rooms.$inferSelect;
+type BooleanPermission = Exclude<keyof ParticipantPermissions, "ideaManagement" | "commentManagement">;
 
 type IdeaProjectionRow = {
   id: string;
   room_id: string;
+  participant_id: string | null;
   text: string;
   heart_count: string | number;
   hearted_by_me: boolean;
@@ -27,11 +29,16 @@ function mapRoom(row: RoomRow): Room {
     slug: row.slug,
     title: row.title,
     participantPermissions: {
+      canViewIdeas: row.participantCanViewIdeas,
       canAddIdeas: row.participantCanAddIdeas,
-      canEditIdeas: row.participantCanEditIdeas,
-      canDeleteIdeas: row.participantCanDeleteIdeas,
       canHeartIdeas: row.participantCanHeartIdeas,
-      canComment: row.participantCanComment,
+      canViewHeartCounts: row.participantCanViewHeartCounts,
+      ideaManagement: row.participantIdeaManagement,
+      canExportIdeas: row.participantCanExportIdeas,
+      canViewComments: row.participantCanViewComments,
+      canAddComments: row.participantCanAddComments,
+      commentManagement: row.participantCommentManagement,
+      canGenerateSummary: row.participantCanGenerateSummary,
       canRenameRoom: row.participantCanRenameRoom,
       canDeleteRoom: row.participantCanDeleteRoom
     },
@@ -44,6 +51,7 @@ function mapIdea(row: IdeaProjectionRow): Idea {
   return {
     id: row.id,
     roomId: row.room_id,
+    participantId: row.participant_id,
     text: row.text,
     heartCount: Number(row.heart_count),
     heartedByMe: row.hearted_by_me,
@@ -53,9 +61,24 @@ function mapIdea(row: IdeaProjectionRow): Idea {
   };
 }
 
+export function permissionsForRoom(row: RoomRow): ParticipantPermissions {
+  return mapRoom(row).participantPermissions;
+}
+
 export function toSharedIdea(idea: Idea): SharedIdea {
   const { heartedByMe: _heartedByMe, ...shared } = idea;
   return shared;
+}
+
+export function redactIdeaForParticipant(idea: Idea, room: RoomRow, adminToken?: string): Idea {
+  if (isRoomAdmin(room, adminToken)) {
+    return idea;
+  }
+  return {
+    ...idea,
+    heartCount: room.participantCanViewHeartCounts ? idea.heartCount : 0,
+    commentCount: room.participantCanViewComments ? idea.commentCount : 0
+  };
 }
 
 export async function createRoom(): Promise<{ room: Room; adminToken: string }> {
@@ -70,11 +93,16 @@ export async function createRoom(): Promise<{ room: Room; adminToken: string }> 
         title: createRoomTitle(),
         adminToken,
         participantManagementEnabled: true,
+        participantCanViewIdeas: participantPermissions.canViewIdeas,
         participantCanAddIdeas: participantPermissions.canAddIdeas,
-        participantCanEditIdeas: participantPermissions.canEditIdeas,
-        participantCanDeleteIdeas: participantPermissions.canDeleteIdeas,
         participantCanHeartIdeas: participantPermissions.canHeartIdeas,
-        participantCanComment: participantPermissions.canComment,
+        participantCanViewHeartCounts: participantPermissions.canViewHeartCounts,
+        participantIdeaManagement: participantPermissions.ideaManagement,
+        participantCanExportIdeas: participantPermissions.canExportIdeas,
+        participantCanViewComments: participantPermissions.canViewComments,
+        participantCanAddComments: participantPermissions.canAddComments,
+        participantCommentManagement: participantPermissions.commentManagement,
+        participantCanGenerateSummary: participantPermissions.canGenerateSummary,
         participantCanRenameRoom: participantPermissions.canRenameRoom,
         participantCanDeleteRoom: participantPermissions.canDeleteRoom,
         createdAt: new Date(),
@@ -112,6 +140,7 @@ export async function getIdeaProjection(ideaId: string, participantId: string): 
     select
       i.id,
       i.room_id,
+      i.participant_id,
       i.text,
       count(distinct h.participant_id) as heart_count,
       exists(
@@ -147,6 +176,7 @@ export async function getRoomSnapshot(
     select
       i.id,
       i.room_id,
+      i.participant_id,
       i.text,
       count(distinct h.participant_id) as heart_count,
       exists(
@@ -160,13 +190,14 @@ export async function getRoomSnapshot(
     left join idea_hearts h on h.idea_id = i.id
     left join comments c on c.idea_id = i.id
     where i.room_id = ${roomRow.id}
+      and (${isRoomAdmin(roomRow, adminToken)} or ${roomRow.participantCanViewIdeas} or i.participant_id = ${participantId})
     group by i.id
     order by count(distinct h.participant_id) desc, i.created_at asc
   `);
 
   return {
     room: mapRoom(roomRow),
-    ideas: ideaRows.map(mapIdea),
+    ideas: ideaRows.map(mapIdea).map((idea) => redactIdeaForParticipant(idea, roomRow, adminToken)),
     participantCount,
     isAdmin: isRoomAdmin(roomRow, adminToken)
   };
@@ -176,21 +207,30 @@ export function isRoomAdmin(room: RoomRow, adminToken: string | undefined): bool
   return Boolean(adminToken && adminToken === room.adminToken);
 }
 
+export function canManageParticipantItem(level: ManagementPermission, ownerParticipantId: string | null, participantId: string): boolean {
+  if (level === "anyone") return true;
+  if (level === "own") return ownerParticipantId === participantId;
+  return false;
+}
+
 export function assertParticipantPermission(
   room: RoomRow,
   adminToken: string | undefined,
-  permission: keyof ParticipantPermissions
+  permission: BooleanPermission
 ): void {
   if (isRoomAdmin(room, adminToken)) {
     return;
   }
 
   const allowed = {
+    canViewIdeas: room.participantCanViewIdeas,
     canAddIdeas: room.participantCanAddIdeas,
-    canEditIdeas: room.participantCanEditIdeas,
-    canDeleteIdeas: room.participantCanDeleteIdeas,
     canHeartIdeas: room.participantCanHeartIdeas,
-    canComment: room.participantCanComment,
+    canViewHeartCounts: room.participantCanViewHeartCounts,
+    canExportIdeas: room.participantCanExportIdeas,
+    canViewComments: room.participantCanViewComments,
+    canAddComments: room.participantCanAddComments,
+    canGenerateSummary: room.participantCanGenerateSummary,
     canRenameRoom: room.participantCanRenameRoom,
     canDeleteRoom: room.participantCanDeleteRoom
   }[permission];
@@ -240,11 +280,16 @@ export async function updateRoomPermissions(
   const [room] = await db
     .update(rooms)
     .set({
+      participantCanViewIdeas: participantPermissions.canViewIdeas,
       participantCanAddIdeas: participantPermissions.canAddIdeas,
-      participantCanEditIdeas: participantPermissions.canEditIdeas,
-      participantCanDeleteIdeas: participantPermissions.canDeleteIdeas,
       participantCanHeartIdeas: participantPermissions.canHeartIdeas,
-      participantCanComment: participantPermissions.canComment,
+      participantCanViewHeartCounts: participantPermissions.canViewHeartCounts,
+      participantIdeaManagement: participantPermissions.ideaManagement,
+      participantCanExportIdeas: participantPermissions.canExportIdeas,
+      participantCanViewComments: participantPermissions.canViewComments,
+      participantCanAddComments: participantPermissions.canAddComments,
+      participantCommentManagement: participantPermissions.commentManagement,
+      participantCanGenerateSummary: participantPermissions.canGenerateSummary,
       participantCanRenameRoom: participantPermissions.canRenameRoom,
       participantCanDeleteRoom: participantPermissions.canDeleteRoom,
       updatedAt: new Date()

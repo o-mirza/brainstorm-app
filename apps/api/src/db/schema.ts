@@ -1,5 +1,7 @@
 import { boolean, index, pgTable, primaryKey, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 
+type ManagementPermission = "none" | "own" | "anyone";
+
 export const rooms = pgTable(
   "rooms",
   {
@@ -8,11 +10,16 @@ export const rooms = pgTable(
     title: text("title").notNull(),
     adminToken: text("admin_token").notNull(),
     participantManagementEnabled: boolean("participant_management_enabled").notNull().default(true),
+    participantCanViewIdeas: boolean("participant_can_view_ideas").notNull().default(true),
     participantCanAddIdeas: boolean("participant_can_add_ideas").notNull().default(true),
-    participantCanEditIdeas: boolean("participant_can_edit_ideas").notNull().default(true),
-    participantCanDeleteIdeas: boolean("participant_can_delete_ideas").notNull().default(true),
     participantCanHeartIdeas: boolean("participant_can_heart_ideas").notNull().default(true),
-    participantCanComment: boolean("participant_can_comment").notNull().default(true),
+    participantCanViewHeartCounts: boolean("participant_can_view_heart_counts").notNull().default(true),
+    participantIdeaManagement: text("participant_idea_management").$type<ManagementPermission>().notNull().default("anyone"),
+    participantCanExportIdeas: boolean("participant_can_export_ideas").notNull().default(true),
+    participantCanViewComments: boolean("participant_can_view_comments").notNull().default(true),
+    participantCanAddComments: boolean("participant_can_add_comments").notNull().default(true),
+    participantCommentManagement: text("participant_comment_management").$type<ManagementPermission>().notNull().default("own"),
+    participantCanGenerateSummary: boolean("participant_can_generate_summary").notNull().default(false),
     participantCanRenameRoom: boolean("participant_can_rename_room").notNull().default(false),
     participantCanDeleteRoom: boolean("participant_can_delete_room").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -30,12 +37,14 @@ export const ideas = pgTable(
     roomId: text("room_id")
       .notNull()
       .references(() => rooms.id, { onDelete: "cascade" }),
+    participantId: text("participant_id"),
     text: text("text").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
   },
   (table) => ({
     roomIdIdx: index("ideas_room_id_idx").on(table.roomId),
+    participantIdIdx: index("ideas_participant_id_idx").on(table.participantId),
     roomCreatedAtIdx: index("ideas_room_created_at_idx").on(table.roomId, table.createdAt)
   })
 );

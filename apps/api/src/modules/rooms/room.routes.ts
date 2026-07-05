@@ -14,7 +14,7 @@ import { makeError } from "../../shared/http.js";
 import { parseParticipantHeader, roomSlugSchema } from "../../shared/validation.js";
 import type { RealtimeGateway } from "../realtime/realtime.gateway.js";
 import { generateAISummary } from "./ai-summary.service.js";
-import { createRoom, deleteRoom, getRoomSnapshot, renameRoom, updateRoomPermissions } from "./room.service.js";
+import { assertParticipantPermission, createRoom, deleteRoom, getRoomRowBySlug, getRoomSnapshot, renameRoom, updateRoomPermissions } from "./room.service.js";
 import { renameRoomRequestSchema, updateRoomPermissionsRequestSchema } from "./room.schemas.js";
 
 function asBadRequest(error: unknown): Error {
@@ -73,10 +73,13 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
   });
 
   app.post<{ Params: { roomSlug: string } }>("/api/rooms/:roomSlug/ai-summary", async (request): Promise<GenerateSummaryResponse> => {
-    try {
-      const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
-      const summary = await generateAISummary(roomSlug);
-      return { summary };
+      try {
+        const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
+        parseParticipantHeader(request.headers["x-participant-id"]);
+        const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+        assertParticipantPermission(await getRoomRowBySlug(roomSlug), adminToken, "canGenerateSummary");
+        const summary = await generateAISummary(roomSlug);
+        return { summary };
     } catch (error) {
       throw asBadRequest(error);
     }

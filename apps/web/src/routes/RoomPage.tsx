@@ -76,11 +76,20 @@ export default function RoomPage() {
   const roomUrl = useMemo(() => getRoomUrl(roomSlug), [roomSlug]);
   const adminUrl = useMemo(() => (roomState.isAdmin && adminToken ? getAdminRoomUrl(roomSlug, adminToken) : undefined), [adminToken, roomSlug, roomState.isAdmin]);
   const participantPermissions = roomState.room?.participantPermissions;
+  const canViewIdeas = roomState.isAdmin || (participantPermissions?.canViewIdeas ?? true);
   const canAddIdeas = roomState.isAdmin || Boolean(participantPermissions?.canAddIdeas);
-  const canEditIdeas = roomState.isAdmin || Boolean(participantPermissions?.canEditIdeas);
-  const canDeleteIdeas = roomState.isAdmin || Boolean(participantPermissions?.canDeleteIdeas);
   const canHeartIdeas = roomState.isAdmin || Boolean(participantPermissions?.canHeartIdeas);
-  const canComment = roomState.isAdmin || (participantPermissions?.canComment ?? true);
+  const canViewHeartCounts = roomState.isAdmin || (participantPermissions?.canViewHeartCounts ?? true);
+  const ideaManagement = participantPermissions?.ideaManagement ?? "none";
+  const canManageOwnIdeas = roomState.isAdmin || ideaManagement === "own" || ideaManagement === "anyone";
+  const canManageAnyIdeas = roomState.isAdmin || ideaManagement === "anyone";
+  const canViewComments = roomState.isAdmin || (participantPermissions?.canViewComments ?? true);
+  const canAddComments = roomState.isAdmin || (participantPermissions?.canAddComments ?? true);
+  const commentManagement = participantPermissions?.commentManagement ?? "none";
+  const canManageOwnComments = roomState.isAdmin || commentManagement === "own" || commentManagement === "anyone";
+  const canManageAnyComments = roomState.isAdmin || commentManagement === "anyone";
+  const canExportIdeas = roomState.isAdmin || (participantPermissions?.canExportIdeas ?? true);
+  const canGenerateSummary = roomState.isAdmin || Boolean(participantPermissions?.canGenerateSummary);
   const canRenameRoom = roomState.isAdmin || Boolean(participantPermissions?.canRenameRoom);
   const canDeleteRoom = roomState.isAdmin || Boolean(participantPermissions?.canDeleteRoom);
 
@@ -263,11 +272,18 @@ export default function RoomPage() {
         roomUrl={roomUrl}
         participantId={participantId}
         isAdmin={roomState.isAdmin}
+        canViewIdeas={canViewIdeas}
         canAddIdeas={canAddIdeas}
-        canEditIdeas={canEditIdeas}
-        canDeleteIdeas={canDeleteIdeas}
+        canManageOwnIdeas={canManageOwnIdeas}
+        canManageAnyIdeas={canManageAnyIdeas}
         canHeartIdeas={canHeartIdeas}
-        canComment={canComment}
+        canViewHeartCounts={canViewHeartCounts}
+        canViewComments={canViewComments}
+        canAddComments={canAddComments}
+        canManageOwnComments={canManageOwnComments}
+        canManageAnyComments={canManageAnyComments}
+        canExportIdeas={canExportIdeas}
+        canGenerateSummary={canGenerateSummary}
         canRenameRoom={canRenameRoom}
         canDeleteRoom={canDeleteRoom}
         participantCount={roomState.participantCount}
@@ -300,7 +316,12 @@ export default function RoomPage() {
       <AnimatePresence>
         {shareOverlayOpen ? <ShareOverlay key="share" roomUrl={roomUrl} onClose={() => setShareOverlayOpen(false)} /> : null}
         {aiSummaryOpen ? (
-          <AISummaryModal key="ai-summary" roomSlug={roomSlug} onClose={() => setAISummaryOpen(false)} onGenerate={generateAISummary} />
+          <AISummaryModal
+            key="ai-summary"
+            roomSlug={roomSlug}
+            onClose={() => setAISummaryOpen(false)}
+            onGenerate={(slug) => generateAISummary(slug, participantId, adminToken)}
+          />
         ) : null}
         {permissionsOpen && adminUrl ? (
           <AdminPermissionsModal

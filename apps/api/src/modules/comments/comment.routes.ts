@@ -37,7 +37,9 @@ export async function registerCommentRoutes(app: FastifyInstance, realtime: Real
   app.get<{ Params: { ideaId: string } }>("/api/ideas/:ideaId/comments", async (request): Promise<GetCommentsResponse> => {
     try {
       const ideaId = ideaIdSchema.parse(request.params.ideaId);
-      return { comments: await getCommentsForIdea(ideaId) };
+      const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
+      const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+      return { comments: await getCommentsForIdea(ideaId, participantId, adminToken) };
     } catch (error) {
       throw asBadRequest(error);
     }

@@ -6,10 +6,12 @@ import { makeError, toIso } from "../../shared/http.js";
 import { createCommentId } from "../../shared/ids.js";
 import {
   assertParticipantPermission,
+  canManageParticipantItem,
   getIdeaProjection,
   getRoomRowBySlug,
   getRoomSlugForIdea,
   isRoomAdmin,
+  redactIdeaForParticipant,
   touchRoom
 } from "../rooms/room.service.js";
 
@@ -46,8 +48,10 @@ async function getCommentWithRoom(commentId: string) {
   return row;
 }
 
-export async function getCommentsForIdea(ideaId: string): Promise<Comment[]> {
-  await getRoomSlugForIdea(ideaId);
+export async function getCommentsForIdea(ideaId: string, participantId: string, adminToken?: string): Promise<Comment[]> {
+  const roomSlug = await getRoomSlugForIdea(ideaId);
+  const room = await getRoomRowBySlug(roomSlug);
+  assertParticipantPermission(room, adminToken, "canViewComments");
   const rows = await db
     .select()
     .from(comments)
@@ -65,7 +69,7 @@ export async function createComment(
 ): Promise<{ comment: Comment; idea: Idea; roomSlug: string }> {
   const roomSlug = await getRoomSlugForIdea(ideaId);
   const room = await getRoomRowBySlug(roomSlug);
-  assertParticipantPermission(room, adminToken, "canComment");
+  assertParticipantPermission(room, adminToken, "canAddComments");
 
   const [idea] = await db.select().from(ideas).where(and(eq(ideas.id, ideaId), eq(ideas.roomId, room.id))).limit(1);
   if (!idea) {
@@ -93,7 +97,7 @@ export async function createComment(
   await touchRoom(room.id);
   return {
     comment: mapComment(created),
-    idea: await getIdeaProjection(ideaId, participantId),
+    idea: redactIdeaForParticipant(await getIdeaProjection(ideaId, participantId), room, adminToken),
     roomSlug
   };
 }
@@ -104,8 +108,11 @@ export async function deleteComment(
   adminToken?: string
 ): Promise<{ comment: Comment; idea: Idea; roomSlug: string }> {
   const row = await getCommentWithRoom(commentId);
-  if (!isRoomAdmin(row.room, adminToken) && row.comment.participantId !== participantId) {
-    throw makeError("comment_delete_forbidden", "Only the comment author or an admin can delete this comment.", 403);
+  if (!isRoomAdmin(row.room, adminToken)) {
+    const canManage = canManageParticipantItem(row.room.participantCommentManagement, row.comment.participantId, participantId);
+    if (!canManage) {
+      throw makeError("comment_delete_forbidden", "You do not have permission to delete this comment.", 403);
+    }
   }
 
   const [deleted] = await db.delete(comments).where(eq(comments.id, commentId)).returning();
@@ -116,7 +123,7 @@ export async function deleteComment(
   await touchRoom(deleted.roomId);
   return {
     comment: mapComment(deleted),
-    idea: await getIdeaProjection(deleted.ideaId, participantId),
+    idea: redactIdeaForParticipant(await getIdeaProjection(deleted.ideaId, participantId), row.room, adminToken),
     roomSlug: row.roomSlug
   };
 }
@@ -128,8 +135,11 @@ export async function updateComment(
   adminToken?: string
 ): Promise<{ comment: Comment; roomSlug: string }> {
   const row = await getCommentWithRoom(commentId);
-  if (!isRoomAdmin(row.room, adminToken) && row.comment.participantId !== participantId) {
-    throw makeError("comment_update_forbidden", "Only the comment author or an admin can edit this comment.", 403);
+  if (!isRoomAdmin(row.room, adminToken)) {
+    const canManage = canManageParticipantItem(row.room.participantCommentManagement, row.comment.participantId, participantId);
+    if (!canManage) {
+      throw makeError("comment_update_forbidden", "You do not have permission to edit this comment.", 403);
+    }
   }
 
   const [updated] = await db

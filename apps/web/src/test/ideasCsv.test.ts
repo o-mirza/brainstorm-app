@@ -6,6 +6,7 @@ function idea(overrides: Partial<Idea>): Idea {
   return {
     id: "idea_1",
     roomId: "room_1",
+    participantId: null,
     text: "Plain idea",
     heartCount: 0,
     heartedByMe: false,

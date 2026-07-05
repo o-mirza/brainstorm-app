@@ -36,6 +36,27 @@
       "when": 1783152000000,
       "tag": "0004_comments",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1783238400000,
+      "tag": "0005_permission_audit",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1783238500000,
+      "tag": "0006_simplify_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1783238600000,
+      "tag": "0007_management_permission_levels",
+      "breakpoints": true
     }
   ]
 }

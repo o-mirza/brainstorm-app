@@ -8,6 +8,7 @@ type Props = {
   roomUrl: string;
   isAdmin: boolean;
   canDeleteRoom: boolean;
+  canGenerateSummary: boolean;
   recentRooms: RecentRoom[];
   onCreateRoom: () => void;
   onShowRecent: () => void;
@@ -21,6 +22,7 @@ export default function Sidebar({
   roomUrl,
   isAdmin,
   canDeleteRoom,
+  canGenerateSummary,
   recentRooms,
   onCreateRoom,
   onShowRecent,
@@ -61,9 +63,11 @@ export default function Sidebar({
         <button type="button" onClick={onShowRecent}>
           <History size={17} /> Recent rooms <span>{recentRooms.length}</span>
         </button>
-        <button type="button" onClick={onShowAISummary}>
-          <Sparkles size={17} /> AI Summary
-        </button>
+        {canGenerateSummary ? (
+          <button type="button" onClick={onShowAISummary}>
+            <Sparkles size={17} /> AI Summary
+          </button>
+        ) : null}
         <button type="button" onClick={toggleTheme} aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}>
           {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
           {theme === "light" ? "Dark mode" : "Light mode"}

@@ -88,10 +88,10 @@ export async function registerIdeaRoutes(app: FastifyInstance, realtime: Realtim
   app.delete<{ Params: { ideaId: string } }>("/api/ideas/:ideaId", async (request): Promise<DeleteIdeaResponse> => {
     try {
       const ideaId = ideaIdSchema.parse(request.params.ideaId);
-      parseParticipantHeader(request.headers["x-participant-id"]);
+      const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
       const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
       const clientMutationId = parseClientMutationId(request.headers["x-client-mutation-id"]);
-      const deleted = await deleteIdea(ideaId, adminToken);
+      const deleted = await deleteIdea(ideaId, participantId, adminToken);
       realtime.broadcastRoom(
         deleted.roomSlug,
         withClientMutationId({ type: "idea.deleted", idea: { id: deleted.ideaId, roomId: deleted.roomId } }, clientMutationId)

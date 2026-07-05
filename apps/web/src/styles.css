@@ -454,11 +454,19 @@ button {
   border-radius: 8px;
   background: var(--card-bg);
   box-shadow: var(--card-shadow);
-  cursor: pointer;
   transition:
     border-color 150ms ease,
     box-shadow 150ms ease,
     transform 150ms ease;
+}
+
+.idea-card.comments-enabled {
+  cursor: pointer;
+}
+
+.idea-card.comments-hidden {
+  grid-template-columns: 54px minmax(0, 1fr) 54px;
+  cursor: default;
 }
 
 .idea-card.menu-open {
@@ -555,43 +563,42 @@ button {
 }
 
 .idea-actions {
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding-right: 6px;
+  justify-content: flex-end;
+  gap: 4px;
+  padding-right: 10px;
 }
 
-.idea-comment-button {
+.idea-comment-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  width: 52px;
+  gap: 5px;
+  min-width: 48px;
   height: 34px;
-  border-radius: 8px;
-  background: transparent;
   color: var(--muted);
-  cursor: pointer;
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
 
-.idea-comment-button svg {
+.idea-comment-count svg {
   flex: 0 0 auto;
 }
 
-.idea-comment-button span {
+.idea-comment-count span {
   display: inline-block;
   min-width: 2ch;
   text-align: center;
 }
 
-.idea-comment-button:hover {
-  background: var(--hover-bg);
-  color: var(--ink);
+.idea-menu-wrap {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
 }
 
 .idea-menu-button {
@@ -613,8 +620,8 @@ button {
 
 .idea-menu {
   position: absolute;
-  top: calc(50% + 16px);
-  right: 10px;
+  top: calc(100% + 4px);
+  right: 0;
   z-index: 30;
   display: grid;
   min-width: 136px;
@@ -1143,6 +1150,7 @@ button {
   gap: 14px;
   width: min(480px, calc(100vw - 32px));
   max-height: min(620px, calc(100dvh - 32px));
+  overflow-y: auto;
   padding: 16px;
   border-radius: 8px;
   background: var(--surface);
@@ -1151,6 +1159,9 @@ button {
 
 .permissions-modal {
   gap: 16px;
+  width: min(560px, calc(100vw - 32px));
+  align-content: start;
+  min-width: 0;
 }
 
 .permissions-section {
@@ -1196,26 +1207,61 @@ button {
 .permissions-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.permissions-group {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow:
+    var(--card-shadow),
+    0 1px 2px rgba(15, 15, 15, 0.04);
 }
 
 .permission-item {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
   background: var(--surface);
-  transition: all 100ms ease;
+  transition: background-color 100ms ease;
   cursor: pointer;
   user-select: none;
 }
 
+.permission-item + .permission-item::before {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  left: 12px;
+  height: 1px;
+  background: var(--line);
+  content: "";
+}
+
 .permission-item:hover {
   background: var(--surface-2);
-  border-color: var(--line-strong);
+}
+
+.permission-item-level {
+  align-items: center;
+}
+
+.permission-item.is-muted .permission-label {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.permission-item.is-muted .toggle-switch,
+.permission-item.is-muted .permission-level-control {
+  opacity: 0.65;
 }
 
 .permission-info {
@@ -1223,12 +1269,14 @@ button {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 
 .permission-label {
   color: var(--ink);
   font-size: 12px;
   font-weight: 600;
+  min-width: 0;
 }
 
 .permission-status {
@@ -1244,6 +1292,40 @@ button {
 
 .permission-status.error {
   color: var(--heart);
+}
+
+.permission-level-control {
+  display: inline-grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: 178px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface-2);
+  flex: 0 0 auto;
+}
+
+.permission-level-control button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.permission-level-control button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.1);
+}
+
+.permission-level-control button:disabled {
+  cursor: default;
 }
 
 @keyframes spin {
@@ -1311,7 +1393,7 @@ button {
 }
 
 .permission-item.has-error {
-  border-color: var(--heart);
+  box-shadow: inset 3px 0 0 var(--heart);
 }
 
 .modal-head {
@@ -1913,11 +1995,45 @@ button {
 }
 
 @media (max-width: 520px) {
-  .permissions-list {
-    max-height: min(240px, calc(100dvh - 330px));
-    overflow: auto;
+  .modal-backdrop {
+    align-items: start;
+    padding: 10px;
+  }
+
+  .permissions-modal {
+    width: min(100%, calc(100vw - 20px));
+    max-height: calc(100dvh - 20px);
+    padding: 12px;
     overscroll-behavior: contain;
-    padding-bottom: 8px;
+  }
+
+  .permissions-section + .permissions-section {
+    margin-top: 2px;
+  }
+
+  .permissions-list {
+    gap: 10px;
+    padding: 6px;
+  }
+
+  .permission-item {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .permission-item-level {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .permission-level-control {
+    width: 100%;
+  }
+
+  .permission-item + .permission-item::before {
+    right: 10px;
+    left: 10px;
   }
 }
 

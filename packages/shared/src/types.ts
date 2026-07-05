@@ -1,24 +1,38 @@
+export type ManagementPermission = "none" | "own" | "anyone";
+
 export type ParticipantPermissions = {
+  canViewIdeas: boolean;
   canAddIdeas: boolean;
-  canEditIdeas: boolean;
-  canDeleteIdeas: boolean;
   canHeartIdeas: boolean;
-  canComment: boolean;
+  canViewHeartCounts: boolean;
+  ideaManagement: ManagementPermission;
+  canExportIdeas: boolean;
+  canViewComments: boolean;
+  canAddComments: boolean;
+  commentManagement: ManagementPermission;
+  canGenerateSummary: boolean;
   canRenameRoom: boolean;
   canDeleteRoom: boolean;
 };
 
 export function defaultParticipantPermissions(): ParticipantPermissions {
   return {
+    canViewIdeas: true,
     canAddIdeas: true,
-    canEditIdeas: true,
-    canDeleteIdeas: true,
     canHeartIdeas: true,
-    canComment: true,
+    canViewHeartCounts: true,
+    ideaManagement: "anyone",
+    canExportIdeas: true,
+    canViewComments: true,
+    canAddComments: true,
+    commentManagement: "own",
+    canGenerateSummary: false,
     canRenameRoom: false,
     canDeleteRoom: false
   };
 }
+
+export type SortOption = "popular" | "newest" | "oldest" | "my-hearts" | "alphabetical";
 
 export type Room = {
   id: string;
@@ -32,6 +46,7 @@ export type Room = {
 export type Idea = {
   id: string;
   roomId: string;
+  participantId: string | null;
   text: string;
   heartCount: number;
   heartedByMe: boolean;

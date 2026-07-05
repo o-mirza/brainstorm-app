@@ -1,4 +1,4 @@
-import type { Comment, Idea, RecentRoom, Room } from "@brainstorm/shared";
+import type { Comment, Idea, RecentRoom, Room, SortOption } from "@brainstorm/shared";
 import { COMMENT_TEXT_MAX_LENGTH } from "@brainstorm/shared";
 import { ArrowLeft, Download } from "lucide-react";
 import { AnimatePresence } from "motion/react";
@@ -22,11 +22,18 @@ type Props = {
   roomUrl: string;
   participantId: string;
   isAdmin: boolean;
+  canViewIdeas: boolean;
   canAddIdeas: boolean;
-  canEditIdeas: boolean;
-  canDeleteIdeas: boolean;
+  canManageOwnIdeas: boolean;
+  canManageAnyIdeas: boolean;
   canHeartIdeas: boolean;
-  canComment: boolean;
+  canViewHeartCounts: boolean;
+  canViewComments: boolean;
+  canAddComments: boolean;
+  canManageOwnComments: boolean;
+  canManageAnyComments: boolean;
+  canExportIdeas: boolean;
+  canGenerateSummary: boolean;
   canRenameRoom: boolean;
   canDeleteRoom: boolean;
   participantCount: number;
@@ -49,8 +56,6 @@ type Props = {
   onUpdateIdea: (ideaId: string, text: string) => Promise<void>;
   onDeleteIdea: (ideaId: string) => Promise<void>;
 };
-
-type SortOption = 'popular' | 'newest' | 'oldest' | 'my-hearts' | 'alphabetical';
 
 type ComposerMode =
   | {
@@ -88,12 +93,18 @@ function updateWithViewTransition(update: () => void) {
 export default function AppShell(props: Props) {
   const isMobile = useMediaQuery("(max-width: 860px)");
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  const [sortBy, setSortBy] = useState<SortOption>('popular');
+  const [sortBy, setSortBy] = useState<SortOption>("popular");
   const [selectedIdeaId, setSelectedIdeaId] = useState<string | null>(null);
 
   useEffect(() => {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
+
+  useEffect(() => {
+    if (!props.canViewHeartCounts && sortBy === "popular") {
+      setSortBy("oldest");
+    }
+  }, [props.canViewHeartCounts, sortBy]);
 
   const selectedIdea = useMemo(
     () => props.ideas.find((idea) => idea.id === selectedIdeaId) ?? null,
@@ -108,10 +119,10 @@ export default function AppShell(props: Props) {
 
   const desiredComposerMode = useMemo<ComposerMode | null>(() => {
     if (selectedIdea) {
-      return props.canComment ? { kind: "comment", key: selectedIdea.id, ideaId: selectedIdea.id } : null;
+      return props.canAddComments ? { kind: "comment", key: selectedIdea.id, ideaId: selectedIdea.id } : null;
     }
     return props.canAddIdeas ? { kind: "idea", key: props.room.slug } : null;
-  }, [props.canAddIdeas, props.canComment, props.room.slug, selectedIdea]);
+  }, [props.canAddIdeas, props.canAddComments, props.room.slug, selectedIdea]);
 
   function toggleSidebar() {
     setSidebarOpen((open) => !open);
@@ -130,6 +141,7 @@ export default function AppShell(props: Props) {
         roomUrl={props.roomUrl}
         isAdmin={props.isAdmin}
         canDeleteRoom={props.canDeleteRoom}
+        canGenerateSummary={props.canGenerateSummary}
         recentRooms={props.recentRooms}
         onCreateRoom={() => handleSidebarAction(props.onCreateRoom)}
         onShowRecent={() => handleSidebarAction(props.onShowRecent)}
@@ -143,7 +155,8 @@ export default function AppShell(props: Props) {
 
   const sortedIdeas = useMemo(() => {
     const list = [...props.ideas];
-    switch (sortBy) {
+    const effectiveSort = props.canViewHeartCounts || sortBy !== "popular" ? sortBy : "oldest";
+    switch (effectiveSort) {
       case 'newest':
         return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       case 'oldest':
@@ -162,9 +175,9 @@ export default function AppShell(props: Props) {
         return list.sort((a, b) => a.text.localeCompare(b.text));
       case 'popular':
       default:
-        return props.ideas;
+        return effectiveSort === "popular" ? props.ideas : list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }
-  }, [props.ideas, sortBy]);
+  }, [props.canViewHeartCounts, props.ideas, sortBy]);
 
   const getSortLabel = (option: SortOption) => {
     switch (option) {
@@ -177,6 +190,7 @@ export default function AppShell(props: Props) {
   };
 
   function exportIdeasCsv() {
+    if (!props.canExportIdeas) return;
     downloadIdeasCsv(props.room.slug, sortedIdeas);
   }
 
@@ -241,36 +255,43 @@ export default function AppShell(props: Props) {
                     onCardClick={closeComments}
                     cardAriaLabel={`Back to ideas from idea: ${selectedIdea.text}`}
                     canHeart={props.canHeartIdeas}
-                    canEdit={props.canEditIdeas}
-                    canDelete={props.canDeleteIdeas}
+                    canShowHeartCount={props.canViewHeartCounts}
+                    canShowComments={props.canViewComments}
+                    canEdit={props.canManageAnyIdeas || (props.canManageOwnIdeas && selectedIdea.participantId === props.participantId)}
+                    canDelete={props.canManageAnyIdeas || (props.canManageOwnIdeas && selectedIdea.participantId === props.participantId)}
                   />
-                  <CommentThread
-                    ideaId={selectedIdea.id}
-                    comments={props.commentsByIdea[selectedIdea.id]}
-                    participantId={props.participantId}
-                    isAdmin={props.isAdmin}
-                    onLoad={props.onLoadComments}
-                    onUpdate={props.onUpdateComment}
-                    onDelete={props.onDeleteComment}
-                  />
+                  {props.canViewComments ? (
+                    <CommentThread
+                      ideaId={selectedIdea.id}
+                      comments={props.commentsByIdea[selectedIdea.id]}
+                      participantId={props.participantId}
+                      canManageOwn={props.canManageOwnComments}
+                      canManageAny={props.canManageAnyComments}
+                      onLoad={props.onLoadComments}
+                      onUpdate={props.onUpdateComment}
+                      onDelete={props.onDeleteComment}
+                    />
+                  ) : null}
                 </div>
               ) : (
                 <>
                   {props.ideas.length > 0 && (
                     <div className="ideas-header">
                       <div className="ideas-count">
-                        {props.ideas.length} {props.ideas.length === 1 ? "idea" : "ideas"}
+                        {props.canViewIdeas ? props.ideas.length : `Your ${props.ideas.length}`} {props.ideas.length === 1 ? "idea" : "ideas"}
                       </div>
                       <div className="ideas-actions">
-                        <button
-                          type="button"
-                          className="export-csv-button"
-                          onClick={exportIdeasCsv}
-                          aria-label="Export ideas as CSV"
-                          title="Export ideas as CSV"
-                        >
-                          <Download size={16} aria-hidden="true" />
-                        </button>
+                        {props.canExportIdeas ? (
+                          <button
+                            type="button"
+                            className="export-csv-button"
+                            onClick={exportIdeasCsv}
+                            aria-label="Export ideas as CSV"
+                            title="Export ideas as CSV"
+                          >
+                            <Download size={16} aria-hidden="true" />
+                          </button>
+                        ) : null}
                         <div className="ideas-sort">
                           <label htmlFor="sort-select" className="sr-only">Sort by</label>
                           <div className="sort-select-wrapper">
@@ -279,7 +300,7 @@ export default function AppShell(props: Props) {
                               value={sortBy}
                               onChange={(e) => setSortBy(e.target.value as SortOption)}
                             >
-                              <option value="popular">Popular</option>
+                              {props.canViewHeartCounts ? <option value="popular">Popular</option> : null}
                               <option value="newest">Newest</option>
                               <option value="oldest">Oldest</option>
                               <option value="my-hearts">My Hearts</option>
@@ -303,9 +324,13 @@ export default function AppShell(props: Props) {
                     onDelete={props.onDeleteIdea}
                     onOpenComments={openComments}
                     canAdd={props.canAddIdeas}
+                    canViewIdeas={props.canViewIdeas}
                     canHeart={props.canHeartIdeas}
-                    canEdit={props.canEditIdeas}
-                    canDelete={props.canDeleteIdeas}
+                    canShowHeartCount={props.canViewHeartCounts}
+                    canShowComments={props.canViewComments}
+                    canManageOwn={props.canManageOwnIdeas}
+                    canManageAny={props.canManageAnyIdeas}
+                    participantId={props.participantId}
                   />
                 </>
               )}

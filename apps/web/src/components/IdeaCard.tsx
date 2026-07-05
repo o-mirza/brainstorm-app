@@ -16,12 +16,27 @@ type Props = {
   onCardClick?: (ideaId: string) => void;
   cardAriaLabel?: string;
   canHeart: boolean;
+  canShowHeartCount: boolean;
+  canShowComments: boolean;
   canEdit: boolean;
   canDelete: boolean;
 };
 
 const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
-  { idea, onToggleHeart, onUpdate, onDelete, onOpenComments, onCardClick, cardAriaLabel, canHeart, canEdit, canDelete },
+  {
+    idea,
+    onToggleHeart,
+    onUpdate,
+    onDelete,
+    onOpenComments,
+    onCardClick,
+    cardAriaLabel,
+    canHeart,
+    canShowHeartCount,
+    canShowComments,
+    canEdit,
+    canDelete
+  },
   ref
 ) {
   const toast = useToast();
@@ -64,11 +79,8 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
     }
   }
 
-  function openComments() {
-    onOpenComments(idea.id);
-  }
-
   function handleCardClick() {
+    if (!canShowComments) return;
     (onCardClick ?? onOpenComments)(idea.id);
   }
 
@@ -86,15 +98,19 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
   const transitionStyle = {
     viewTransitionName: `idea-card-${idea.id.replace(/[^a-zA-Z0-9_-]/g, "-")}`
   } as CSSProperties;
+  const commentsLabel = `${idea.commentCount} ${idea.commentCount === 1 ? "comment" : "comments"}`;
+  const cardLabel = canShowComments
+    ? `${cardAriaLabel ?? `Open comments for idea: ${idea.text}`}. ${commentsLabel}`
+    : `Idea: ${idea.text}`;
 
   return (
     <article
       ref={ref}
-      className={`idea-card ${menuOpen ? "menu-open" : ""}`}
+      className={`idea-card ${canShowComments ? "comments-enabled" : "comments-hidden"} ${menuOpen ? "menu-open" : ""}`}
       style={transitionStyle}
-      role="button"
-      tabIndex={0}
-      aria-label={cardAriaLabel ?? `Open comments for idea: ${idea.text}`}
+      role={canShowComments ? "button" : undefined}
+      tabIndex={canShowComments ? 0 : -1}
+      aria-label={cardLabel}
       onClick={handleCardClick}
       onKeyDown={openCommentsFromKeyboard}
     >
@@ -108,45 +124,44 @@ const IdeaCard = forwardRef<HTMLElement, Props>(function IdeaCard(
             aria-label={idea.heartedByMe ? "Remove heart" : "Heart idea"}
           >
             <Heart />
-            <span className="vote-count">{idea.heartCount}</span>
+            {canShowHeartCount ? <span className="vote-count">{idea.heartCount}</span> : null}
           </button>
         ) : (
-          <div className="vote-control vote-count-static" aria-label={`${idea.heartCount} hearts`}>
+          <div className="vote-control vote-count-static" aria-label={canShowHeartCount ? `${idea.heartCount} hearts` : "Hearts hidden"}>
             <Heart />
-            <span className="vote-count">{idea.heartCount}</span>
+            {canShowHeartCount ? <span className="vote-count">{idea.heartCount}</span> : null}
           </div>
         )}
       </div>
       <div className="idea-content">
         <p className="idea-text">{idea.text}</p>
       </div>
-      <div className="idea-actions" ref={menuRef} onClick={stopCardClick}>
-        <button
-          className="idea-comment-button"
-          type="button"
-          aria-label={`${idea.commentCount} ${idea.commentCount === 1 ? "comment" : "comments"}`}
-          onClick={openComments}
-        >
-          <MessageSquare size={18} />
-          <span>{idea.commentCount}</span>
-        </button>
-        <button className="idea-menu-button" type="button" aria-label="Idea actions" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
-          <MoreVertical size={19} />
-        </button>
-        <div className={`idea-menu ${menuOpen ? "open" : ""}`}>
-          {canEdit ? (
-            <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }}>
-              <Pencil size={15} /> Edit
-            </button>
-          ) : null}
-          <button type="button" onClick={() => { void copyText(); }}>
-            <Clipboard size={15} /> Copy text
+      <div className="idea-actions">
+        {canShowComments ? (
+          <div className="idea-comment-count" aria-hidden="true">
+            <MessageSquare size={18} />
+            <span>{idea.commentCount}</span>
+          </div>
+        ) : null}
+        <div className="idea-menu-wrap" ref={menuRef} onClick={stopCardClick}>
+          <button className="idea-menu-button" type="button" aria-label="Idea actions" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
+            <MoreVertical size={19} />
           </button>
-          {canDelete ? (
-            <button type="button" data-action="delete" onClick={() => { setMenuOpen(false); setDeleting(true); }}>
-              <Trash2 size={15} /> Delete
+          <div className={`idea-menu ${menuOpen ? "open" : ""}`}>
+            {canEdit ? (
+              <button type="button" onClick={() => { setEditing(true); setMenuOpen(false); }}>
+                <Pencil size={15} /> Edit
+              </button>
+            ) : null}
+            <button type="button" onClick={() => { void copyText(); }}>
+              <Clipboard size={15} /> Copy text
             </button>
-          ) : null}
+            {canDelete ? (
+              <button type="button" data-action="delete" onClick={() => { setMenuOpen(false); setDeleting(true); }}>
+                <Trash2 size={15} /> Delete
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       <AnimatePresence>

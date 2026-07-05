@@ -6,6 +6,7 @@ function idea(id: string, heartCount: number, createdAt: string): Idea {
   return {
     id,
     roomId: "r_room",
+    participantId: null,
     text: id,
     heartCount,
     heartedByMe: false,
