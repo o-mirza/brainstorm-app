@@ -444,6 +444,15 @@ button {
   margin: 0 auto;
 }
 
+.ideas-hidden-notice {
+  max-width: 920px;
+  margin: 14px auto 0;
+  padding: 0 4px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
 .idea-card {
   position: relative;
   display: grid;

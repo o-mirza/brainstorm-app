@@ -21,45 +21,50 @@ type Props = {
 };
 
 export default function IdeaList(props: Props) {
+  const hiddenIdeasNotice = "Ideas added by others are hidden.";
+
   if (props.ideas.length === 0) {
     return (
       <div className="empty">
         <div>
           <strong>No ideas yet</strong>
-          <span>{props.canViewIdeas ? (props.canAdd ? "Add the first one." : "Waiting for ideas.") : "Only your submissions are visible here."}</span>
+          <span>{props.canViewIdeas ? (props.canAdd ? "Add the first one." : "Waiting for ideas.") : hiddenIdeasNotice}</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="ideas">
-      <AnimatePresence initial={false} mode="popLayout">
-        {props.ideas.map((idea) => (
-          <motion.div
-            key={idea.renderKey}
-            layout
-            variants={ideaItemVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            transition={{ duration: 0.18, ease: easeStandard }}
-          >
-            <IdeaCard
-              idea={idea}
-              onToggleHeart={props.onToggleHeart}
-              onUpdate={props.onUpdate}
-              onDelete={props.onDelete}
-              onOpenComments={props.onOpenComments}
-              canHeart={props.canHeart}
-              canShowHeartCount={props.canShowHeartCount}
-              canShowComments={props.canShowComments}
-              canEdit={props.canManageAny || (props.canManageOwn && idea.participantId === props.participantId)}
-              canDelete={props.canManageAny || (props.canManageOwn && idea.participantId === props.participantId)}
-            />
-          </motion.div>
-        ))}
-      </AnimatePresence>
-    </div>
+    <>
+      <div className="ideas">
+        <AnimatePresence initial={false} mode="popLayout">
+          {props.ideas.map((idea) => (
+            <motion.div
+              key={idea.renderKey}
+              layout
+              variants={ideaItemVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              transition={{ duration: 0.18, ease: easeStandard }}
+            >
+              <IdeaCard
+                idea={idea}
+                onToggleHeart={props.onToggleHeart}
+                onUpdate={props.onUpdate}
+                onDelete={props.onDelete}
+                onOpenComments={props.onOpenComments}
+                canHeart={props.canHeart}
+                canShowHeartCount={props.canShowHeartCount}
+                canShowComments={props.canShowComments}
+                canEdit={props.canManageAny || (props.canManageOwn && idea.participantId === props.participantId)}
+                canDelete={props.canManageAny || (props.canManageOwn && idea.participantId === props.participantId)}
+              />
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+      {!props.canViewIdeas && <div className="ideas-hidden-notice">{hiddenIdeasNotice}</div>}
+    </>
   );
 }
