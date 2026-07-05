@@ -14,6 +14,7 @@ type ConnectionState = {
   id: string;
   socket: SocketLike;
   participantId: string | null;
+  adminToken: string | undefined;
   roomSlugs: Set<string>;
 };
 
@@ -29,6 +30,7 @@ export class RealtimeGateway {
       id: connectionId,
       socket,
       participantId: null,
+      adminToken: undefined,
       roomSlugs: new Set()
     });
     return connectionId;
@@ -41,19 +43,20 @@ export class RealtimeGateway {
     }
 
     if (event.type === "room.subscribe") {
-      await this.subscribe(connectionId, event.roomSlug, event.participantId);
+      await this.subscribe(connectionId, event.roomSlug, event.participantId, event.adminToken);
       return;
     }
 
     this.unsubscribe(connectionId, event.roomSlug);
   }
 
-  async subscribe(connectionId: string, roomSlug: string, participantId: string): Promise<void> {
+  async subscribe(connectionId: string, roomSlug: string, participantId: string, adminToken?: string): Promise<void> {
     const connection = this.connections.get(connectionId);
     if (!connection) return;
 
     await getRoomBySlug(roomSlug);
     connection.participantId = participantId;
+    connection.adminToken = adminToken;
     connection.roomSlugs.add(roomSlug);
 
     const roomSet = this.roomConnections.get(roomSlug) ?? new Set<string>();
@@ -62,7 +65,7 @@ export class RealtimeGateway {
 
     this.send(connectionId, {
       type: "room.snapshot",
-      snapshot: await getRoomSnapshot(roomSlug, participantId, this.getParticipantCount(roomSlug))
+      snapshot: await getRoomSnapshot(roomSlug, participantId, this.getParticipantCount(roomSlug), adminToken)
     });
     this.broadcastParticipantCount(roomSlug);
   }
@@ -103,6 +106,23 @@ export class RealtimeGateway {
     for (const connectionId of roomSet) {
       this.send(connectionId, event);
     }
+  }
+
+  async broadcastRoomSnapshots(roomSlug: string): Promise<void> {
+    const roomSet = this.roomConnections.get(roomSlug);
+    if (!roomSet) return;
+
+    const participantCount = this.getParticipantCount(roomSlug);
+    await Promise.all(
+      [...roomSet].map(async (connectionId) => {
+        const connection = this.connections.get(connectionId);
+        if (!connection?.participantId) return;
+        this.send(connectionId, {
+          type: "room.snapshot",
+          snapshot: await getRoomSnapshot(roomSlug, connection.participantId, participantCount, connection.adminToken)
+        });
+      })
+    );
   }
 
   broadcastRoomDeleted(roomSlug: string): void {

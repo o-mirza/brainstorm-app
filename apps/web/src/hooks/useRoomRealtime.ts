@@ -6,11 +6,12 @@ import { WS_BASE_URL } from "../lib/websocket";
 type Options = {
   roomSlug: string;
   participantId: string;
+  adminToken?: string | undefined;
   onEvent: (event: ServerWsEvent) => void;
   onUncertain: () => void;
 };
 
-export function useRoomRealtime({ roomSlug, participantId, onEvent, onUncertain }: Options): ConnectionStatus {
+export function useRoomRealtime({ roomSlug, participantId, adminToken, onEvent, onUncertain }: Options): ConnectionStatus {
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const retryRef = useRef(500);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -26,7 +27,7 @@ export function useRoomRealtime({ roomSlug, participantId, onEvent, onUncertain 
       socket.addEventListener("open", () => {
         retryRef.current = 500;
         setStatus("connected");
-        socket?.send(JSON.stringify({ type: "room.subscribe", roomSlug, participantId }));
+        socket?.send(JSON.stringify({ type: "room.subscribe", roomSlug, participantId, adminToken }));
       });
 
       socket.addEventListener("message", (message) => {
@@ -72,7 +73,7 @@ export function useRoomRealtime({ roomSlug, participantId, onEvent, onUncertain 
       if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
       socket?.close();
     };
-  }, [onEvent, onUncertain, participantId, roomSlug]);
+  }, [adminToken, onEvent, onUncertain, participantId, roomSlug]);
 
   return status;
 }

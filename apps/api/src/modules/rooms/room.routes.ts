@@ -93,7 +93,7 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
         const { participantPermissions } = updateRoomPermissionsRequestSchema.parse(request.body);
         const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
         const room = await updateRoomPermissions(roomSlug, participantPermissions, adminToken);
-        realtime.broadcastRoom(roomSlug, { type: "room.updated", room });
+        await realtime.broadcastRoomSnapshots(roomSlug);
         return { room };
       } catch (error) {
         throw asBadRequest(error);

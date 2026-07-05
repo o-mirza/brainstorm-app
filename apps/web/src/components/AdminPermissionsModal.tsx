@@ -108,8 +108,8 @@ export default function AdminPermissionsModal({ adminUrl, permissions, onClose, 
       const status = (
         <>
           {isPending ? (
-            <span className="permission-status loading">
-              <Loader2 size={10} className="spinner" /> Saving...
+            <span className="permission-status loading" aria-label="Saving permission">
+              <Loader2 size={10} className="spinner" aria-hidden="true" />
             </span>
           ) : null}
           {isError && error ? (

@@ -100,12 +100,6 @@ export default function AppShell(props: Props) {
     setSidebarOpen(!isMobile);
   }, [isMobile]);
 
-  useEffect(() => {
-    if (!props.canViewHeartCounts && sortBy === "popular") {
-      setSortBy("oldest");
-    }
-  }, [props.canViewHeartCounts, sortBy]);
-
   const selectedIdea = useMemo(
     () => props.ideas.find((idea) => idea.id === selectedIdeaId) ?? null,
     [props.ideas, selectedIdeaId]
@@ -178,6 +172,8 @@ export default function AppShell(props: Props) {
         return effectiveSort === "popular" ? props.ideas : list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }
   }, [props.canViewHeartCounts, props.ideas, sortBy]);
+
+  const displaySortBy: SortOption = props.canViewHeartCounts || sortBy !== "popular" ? sortBy : "oldest";
 
   const getSortLabel = (option: SortOption) => {
     switch (option) {
@@ -307,7 +303,7 @@ export default function AppShell(props: Props) {
                               <option value="alphabetical">A-Z</option>
                             </select>
                             <span className="sort-trigger">
-                              Sort by: <strong>{getSortLabel(sortBy)}</strong>
+                              Sort by: <strong>{getSortLabel(displaySortBy)}</strong>
                               <svg viewBox="0 0 24 24" width="14" height="14" className="chevron-icon">
                                 <path d="M7 10l5 5 5-5z" fill="currentColor" />
                               </svg>

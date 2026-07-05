@@ -39,7 +39,7 @@ export default function RoomPage() {
   const onUncertain = useCallback(() => {
     void roomState.actions.refresh();
   }, [roomState.actions.refresh]);
-  const connectionStatus = useRoomRealtime({ roomSlug, participantId, onEvent, onUncertain });
+  const connectionStatus = useRoomRealtime({ roomSlug, participantId, adminToken, onEvent, onUncertain });
 
   useEffect(() => {
     setAdminToken(adminTokenFromUrl ?? getStoredRoomAdminToken(roomSlug));

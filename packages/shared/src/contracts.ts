@@ -127,6 +127,7 @@ export type ClientWsEvent =
       type: "room.subscribe";
       roomSlug: string;
       participantId: string;
+      adminToken?: string | undefined;
     }
   | {
       type: "room.unsubscribe";
