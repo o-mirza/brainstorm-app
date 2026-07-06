@@ -107,6 +107,7 @@ export default function CommentThread({
         <AnimatePresence initial={false} mode="popLayout">
           {comments.map((comment) => {
             const canManage = canManageAny || (canManageOwn && comment.participantId === participantId);
+            const isOwnComment = comment.participantId === participantId;
             const menuOpen = openMenuId === comment.id;
             return (
               <motion.article
@@ -129,6 +130,7 @@ export default function CommentThread({
                 <div className="comment-body">
                   <div className="comment-meta">
                     <time dateTime={comment.createdAt}>{formatter.format(comment.createdAt)}</time>
+                    {isOwnComment ? <span className="comment-you-badge">You</span> : null}
                     <div
                       className="comment-actions"
                       ref={(element) => {

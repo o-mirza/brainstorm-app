@@ -753,6 +753,20 @@ button {
   font-size: 12px;
 }
 
+.comment-you-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--hover-bg);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .comment-body p {
   margin: 2px 0 0;
   overflow-wrap: anywhere;
