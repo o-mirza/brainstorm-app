@@ -93,19 +93,14 @@ export default function ShareOverlay({ roomUrl, onClose }: { roomUrl: string; on
       >
         <h1>Jump in</h1>
         <div className="large-qr-stage">
-          <motion.div
+          <QRCodeSVG
+            value={roomUrl}
+            size={340}
+            bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
+            fgColor={theme === "dark" ? "#ffffff" : "#000000"}
             className="large-qr"
-            layoutId="share-room-qr"
-            transition={{ layout: { duration: 0.2, ease: easeOverlay } }}
             onClick={onClose}
-          >
-            <QRCodeSVG
-              value={roomUrl}
-              size={340}
-              bgColor={theme === "dark" ? "#13151a" : "#ffffff"}
-              fgColor={theme === "dark" ? "#ffffff" : "#000000"}
-            />
-          </motion.div>
+          />
         </div>
         <div className="large-link-box" onMouseDown={(event) => event.stopPropagation()}>
           <span>{roomUrl}</span>
