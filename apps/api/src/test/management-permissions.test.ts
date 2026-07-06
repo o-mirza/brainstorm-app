@@ -62,7 +62,7 @@ describe("management permission levels", () => {
     mockedDb.select.mockReset();
     mockRoomLookup({ participantCanExportData: false });
 
-    await expect(getRoomExportData("test-room", "p_participant1", false)).rejects.toMatchObject({
+    await expect(getRoomExportData("test-room", "p_participant1", { includeHeartCounts: false, includeComments: false })).rejects.toMatchObject({
       code: "admin_required",
       statusCode: 403
     });
@@ -87,7 +87,7 @@ describe("management permission levels", () => {
       }
     ] as never);
 
-    await expect(getRoomExportData("test-room", "p_participant1", false, "admin-token")).resolves.toEqual([
+    await expect(getRoomExportData("test-room", "p_participant1", { includeHeartCounts: true, includeComments: false }, "admin-token")).resolves.toEqual([
       {
         ideaId: "i_1",
         ideaText: "Ship it",
@@ -102,12 +102,24 @@ describe("management permission levels", () => {
     ]);
   });
 
+  it("requires heart count view permission for heart-count-inclusive export", async () => {
+    mockedDb.execute.mockReset();
+    mockedDb.select.mockReset();
+    mockRoomLookup({ participantCanViewHeartCounts: false });
+
+    await expect(getRoomExportData("test-room", "p_participant1", { includeHeartCounts: true, includeComments: false })).rejects.toMatchObject({
+      code: "admin_required",
+      statusCode: 403
+    });
+    expect(mockedDb.execute).not.toHaveBeenCalled();
+  });
+
   it("requires comment view permission for comment-inclusive export", async () => {
     mockedDb.execute.mockReset();
     mockedDb.select.mockReset();
     mockRoomLookup({ participantCanViewComments: false });
 
-    await expect(getRoomExportData("test-room", "p_participant1", true)).rejects.toMatchObject({
+    await expect(getRoomExportData("test-room", "p_participant1", { includeHeartCounts: false, includeComments: true })).rejects.toMatchObject({
       code: "admin_required",
       statusCode: 403
     });

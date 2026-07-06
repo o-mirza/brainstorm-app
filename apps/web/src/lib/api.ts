@@ -15,6 +15,7 @@ import type {
   ParticipantPermissions,
   RenameRoomResponse,
   Room,
+  RoomExportOptions,
   RoomExportRow,
   RoomSnapshot,
   UnheartIdeaResponse,
@@ -68,10 +69,13 @@ export async function getRoomSnapshot(roomSlug: string, participantId: string, a
 export async function getRoomExportData(
   roomSlug: string,
   participantId: string,
-  includeComments: boolean,
+  options: RoomExportOptions,
   adminToken?: string
 ): Promise<RoomExportRow[]> {
-  const params = new URLSearchParams({ includeComments: String(includeComments) });
+  const params = new URLSearchParams({
+    includeHeartCounts: String(options.includeHeartCounts),
+    includeComments: String(options.includeComments)
+  });
   const data = await request<ExportRoomDataResponse>(`/api/rooms/${roomSlug}/export?${params}`, {
     headers: { "x-participant-id": participantId, ...adminHeaders(adminToken) }
   });

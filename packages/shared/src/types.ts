@@ -115,6 +115,11 @@ export type RoomExportRow = {
   commentUpdatedAt: string | null;
 };
 
+export type RoomExportOptions = {
+  includeHeartCounts: boolean;
+  includeComments: boolean;
+};
+
 export type ApiError = {
   error: {
     code: string;

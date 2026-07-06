@@ -1,4 +1,4 @@
-import type { Idea, ManagementPermission, ParticipantPermissions, Room, RoomExportRow, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
+import type { Idea, ManagementPermission, ParticipantPermissions, Room, RoomExportOptions, RoomExportRow, RoomSnapshot, SharedIdea } from "@brainstorm/shared";
 import { defaultParticipantPermissions } from "@brainstorm/shared";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db/client.js";
@@ -285,21 +285,25 @@ function mapExportRow(row: ExportProjectionRow): RoomExportRow {
 export async function getRoomExportData(
   roomSlug: string,
   participantId: string,
-  includeComments: boolean,
+  options: RoomExportOptions,
   adminToken?: string
 ): Promise<RoomExportRow[]> {
   const roomRow = await getRoomRowBySlug(roomSlug);
   assertParticipantPermission(roomRow, adminToken, "canExportData");
-  if (includeComments) {
+  if (options.includeHeartCounts) {
+    assertParticipantPermission(roomRow, adminToken, "canViewHeartCounts");
+  }
+  if (options.includeComments) {
     assertParticipantPermission(roomRow, adminToken, "canViewComments");
   }
 
-  const rows = includeComments
+  const heartCountProjection = options.includeHeartCounts ? sql`count(distinct h.participant_id)` : sql`0`;
+  const rows = options.includeComments
     ? await db.execute<ExportProjectionRow>(sql`
         select
           i.id as idea_id,
           i.text as idea_text,
-          count(distinct h.participant_id) as heart_count,
+          ${heartCountProjection} as heart_count,
           i.created_at as idea_created_at,
           i.updated_at as idea_updated_at,
           c.id as comment_id,
@@ -318,7 +322,7 @@ export async function getRoomExportData(
         select
           i.id as idea_id,
           i.text as idea_text,
-          count(distinct h.participant_id) as heart_count,
+          ${heartCountProjection} as heart_count,
           i.created_at as idea_created_at,
           i.updated_at as idea_updated_at,
           null::text as comment_id,

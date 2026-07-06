@@ -27,6 +27,15 @@ describe("serializeIdeasCsv", () => {
     );
   });
 
+  it("omits heart counts when they are not included", () => {
+    expect(serializeIdeasCsv([row({ ideaText: "Launch the beta", heartCount: 3 })], { includeHeartCounts: false, includeComments: false })).toBe(
+      [
+        "Idea,Created At,Updated At",
+        "Launch the beta,2026-06-26T10:00:00.000Z,2026-06-26T10:01:00.000Z"
+      ].join("\r\n")
+    );
+  });
+
   it("escapes commas, quotes, and multiline text", () => {
     expect(serializeIdeasCsv([row({ ideaText: 'One, "two"\nand three' })])).toBe(
       [
@@ -73,7 +82,7 @@ describe("serializeIdeasCsv", () => {
             commentUpdatedAt: "2026-06-26T12:01:00.000Z"
           })
         ],
-        true
+        { includeHeartCounts: true, includeComments: true }
       )
     ).toBe(
       [
@@ -85,7 +94,7 @@ describe("serializeIdeasCsv", () => {
   });
 
   it("keeps ideas without comments when comments are included", () => {
-    expect(serializeIdeasCsv([row({ ideaText: "No comments" })], true)).toBe(
+    expect(serializeIdeasCsv([row({ ideaText: "No comments" })], { includeHeartCounts: true, includeComments: true })).toBe(
       [
         "Idea,Hearts,Created At,Updated At,Comment,Comment Created At,Comment Updated At",
         "No comments,0,2026-06-26T10:00:00.000Z,2026-06-26T10:01:00.000Z,,,"
@@ -93,8 +102,30 @@ describe("serializeIdeasCsv", () => {
     );
   });
 
+  it("serializes comments without heart counts", () => {
+    expect(
+      serializeIdeasCsv(
+        [
+          row({
+            ideaText: "Launch the beta",
+            heartCount: 3,
+            commentText: "Needs docs",
+            commentCreatedAt: "2026-06-26T11:00:00.000Z",
+            commentUpdatedAt: "2026-06-26T11:01:00.000Z"
+          })
+        ],
+        { includeHeartCounts: false, includeComments: true }
+      )
+    ).toBe(
+      [
+        "Idea,Created At,Updated At,Comment,Comment Created At,Comment Updated At",
+        "Launch the beta,2026-06-26T10:00:00.000Z,2026-06-26T10:01:00.000Z,Needs docs,2026-06-26T11:00:00.000Z,2026-06-26T11:01:00.000Z"
+      ].join("\r\n")
+    );
+  });
+
   it("escapes comment text", () => {
-    expect(serializeIdeasCsv([row({ commentText: 'One, "two"\nand three' })], true)).toBe(
+    expect(serializeIdeasCsv([row({ commentText: 'One, "two"\nand three' })], { includeHeartCounts: true, includeComments: true })).toBe(
       [
         "Idea,Hearts,Created At,Updated At,Comment,Comment Created At,Comment Updated At",
         'Plain idea,0,2026-06-26T10:00:00.000Z,2026-06-26T10:01:00.000Z,"One, ""two""\nand three",,'

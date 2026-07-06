@@ -54,15 +54,16 @@ export async function registerRoomRoutes(app: FastifyInstance, realtime: Realtim
     }
   });
 
-  app.get<{ Params: { roomSlug: string }; Querystring: { includeComments?: string } }>(
+  app.get<{ Params: { roomSlug: string }; Querystring: { includeHeartCounts?: string; includeComments?: string } }>(
     "/api/rooms/:roomSlug/export",
     async (request): Promise<ExportRoomDataResponse> => {
       try {
         const roomSlug = roomSlugSchema.parse(request.params.roomSlug);
         const participantId = parseParticipantHeader(request.headers["x-participant-id"]);
         const adminToken = parseAdminToken(request.headers["x-room-admin-token"]);
+        const includeHeartCounts = request.query.includeHeartCounts === "true";
         const includeComments = request.query.includeComments === "true";
-        const rows = await getRoomExportData(roomSlug, participantId, includeComments, adminToken);
+        const rows = await getRoomExportData(roomSlug, participantId, { includeHeartCounts, includeComments }, adminToken);
         return { rows };
       } catch (error) {
         throw asBadRequest(error);

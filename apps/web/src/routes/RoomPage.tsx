@@ -1,4 +1,4 @@
-import type { Comment, Idea, ParticipantPermissions } from "@brainstorm/shared";
+import type { Comment, Idea, ParticipantPermissions, RoomExportOptions } from "@brainstorm/shared";
 import { AnimatePresence, LayoutGroup } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
@@ -209,10 +209,10 @@ export default function RoomPage() {
     await roomState.actions.updatePermissions(permissions);
   }
 
-  async function exportData(includeComments: boolean) {
+  async function exportData(options: RoomExportOptions) {
     try {
-      const rows = await getRoomExportData(roomSlug, participantId, includeComments, adminToken);
-      downloadIdeasCsv(roomSlug, rows, includeComments);
+      const rows = await getRoomExportData(roomSlug, participantId, options, adminToken);
+      downloadIdeasCsv(roomSlug, rows, options);
       setExportOpen(false);
       toast.success("CSV exported");
     } catch (exportError) {
@@ -349,6 +349,7 @@ export default function RoomPage() {
         {exportOpen ? (
           <ExportDataModal
             key="export"
+            canViewHeartCounts={canViewHeartCounts}
             canViewComments={canViewComments}
             onClose={() => setExportOpen(false)}
             onExport={exportData}

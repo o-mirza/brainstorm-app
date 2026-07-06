@@ -1444,13 +1444,34 @@ button {
   line-height: 1.45;
 }
 
+.export-options {
+  display: grid;
+  gap: 12px;
+}
+
 .export-option {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 10px;
   color: var(--ink);
   font-size: 13px;
   font-weight: 600;
+}
+
+.export-option input {
+  margin-top: 2px;
+}
+
+.export-option span {
+  display: grid;
+  gap: 3px;
+}
+
+.export-option small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
 }
 
 .modal-actions {
